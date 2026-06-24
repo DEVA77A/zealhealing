@@ -33,6 +33,7 @@ import BookingManagement from './pages/admin/BookingManagement';
 import UserManagement from './pages/admin/UserManagement';
 import InvoiceManagement from './pages/admin/InvoiceManagement';
 import SalesAnalytics from './pages/admin/SalesAnalytics';
+import BookingCalendar from './pages/admin/BookingCalendar';
 
 const AppContent = () => {
   const location = useLocation();
@@ -70,6 +71,7 @@ const AppContent = () => {
             <Route path="users" element={<UserManagement />} />
             <Route path="invoices" element={<InvoiceManagement />} />
             <Route path="analytics" element={<SalesAnalytics />} />
+            <Route path="calendar" element={<BookingCalendar />} />
           </Route>
         </Routes>
       </main>

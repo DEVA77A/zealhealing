@@ -27,7 +27,7 @@ const invoiceSchema = mongoose.Schema(
     GST: {
       type: Number,
       required: true,
-      default: 5,
+      default: 18,
     },
     roundOff: {
       type: Number,

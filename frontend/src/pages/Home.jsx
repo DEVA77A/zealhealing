@@ -8,17 +8,18 @@ const Home = () => {
       <section className="relative h-screen flex flex-col items-center justify-center text-center px-4 overflow-hidden pt-16">
         <div className="absolute inset-0">
           <img src="/hero-bg.png" alt="Spiritual Path Background" className="w-full h-full object-cover" />
-          <div className="absolute inset-0 bg-gradient-to-b from-sage-50/70 via-sage-50/50 to-sage-50 backdrop-blur-[2px]"></div>
+          <div className="absolute inset-0 bg-black/20" /> {/* Subtle dark overlay for contrast */}
+          <div className="absolute inset-0 bg-gradient-to-b from-sage-50/10 via-transparent to-sage-50/90" />
         </div>
         
         <motion.div 
           initial={{ opacity: 0, y: 30 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.8 }}
-          className="relative z-10 max-w-3xl flex flex-col items-center"
+          className="relative z-10 max-w-4xl flex flex-col items-center"
         >
-          <img src="/logo.png" alt="Zeal Healing Logo" className="w-48 h-48 md:w-56 md:h-56 mb-6 object-contain mix-blend-multiply rounded-full" />
-          <h1 className="text-5xl md:text-7xl font-serif font-bold text-darkGreen mb-6 leading-tight">
+          <img src="/logo.png" alt="Zeal Healing Logo" className="w-48 h-48 md:w-56 md:h-56 mb-8 object-contain drop-shadow-2xl" />
+          <h1 className="text-5xl md:text-8xl font-serif font-bold text-darkGreen mb-6 leading-tight drop-shadow-sm">
             Discover Your <br /> Spiritual Path
           </h1>
           

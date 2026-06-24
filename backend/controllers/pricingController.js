@@ -1,13 +1,12 @@
 const { detectLocation } = require('../services/locationService');
 const { getExchangeRate, convertPrice } = require('../services/currencyService');
-const Class = require('../models/Class');
+const { basePrices, GST_RATE_INDIA } = require('../config/pricingConfig');
 
 // @desc    Detect user location based on IP
 // @route   GET /api/pricing/detect
 // @access  Public
 const detectUserLocation = async (req, res) => {
   try {
-    // Read IP from headers (behind proxy) or connection
     const ip = req.headers['x-forwarded-for']?.split(',')[0] || req.socket.remoteAddress;
     const locationData = await detectLocation(ip);
     res.json(locationData);
@@ -16,18 +15,7 @@ const detectUserLocation = async (req, res) => {
   }
 };
 
-// Helper to get base prices from DB
-const getBasePricesFromDB = async () => {
-  const classes = await Class.find({ status: 'Active' });
-  const basePrices = { voice: {}, video: {} };
-  classes.forEach((cls) => {
-    if (cls.type === 'voice') basePrices.voice[cls.duration] = cls.price;
-    if (cls.type === 'video') basePrices.video[cls.duration] = cls.price;
-  });
-  return basePrices;
-};
-
-// @desc    Convert prices to target currency
+// @desc    Get prices with India/Abroad distinction
 // @route   GET /api/pricing/convert
 // @access  Public
 const convertPrices = async (req, res) => {
@@ -42,37 +30,42 @@ const convertPrices = async (req, res) => {
       symbol = locationData.currencySymbol;
     }
 
-    const basePrices = await getBasePricesFromDB();
+    const isIndia = currency === 'INR' || (country && country.toLowerCase() === 'india');
+    const countryCategory = isIndia ? 'india' : 'abroad';
+    const priceSet = basePrices[countryCategory];
 
-    if (currency === 'INR') {
+    if (isIndia) {
       return res.json({
         country: country || 'India',
         currency: 'INR',
         symbol: '₹',
-        prices: basePrices,
+        countryCategory,
+        gstRate: GST_RATE_INDIA,
+        prices: priceSet,
         exchangeRate: 1
       });
     }
 
+    // For abroad, prices are already in INR (flat rate, no GST)
     const rate = await getExchangeRate(currency);
 
     if (!rate) {
-      // Fallback to INR if exchange API fails
       return res.json({
-        country: country || 'India',
+        country: country || 'Unknown',
         currency: 'INR',
         symbol: '₹',
-        prices: basePrices,
+        countryCategory,
+        gstRate: 0,
+        prices: priceSet,
         exchangeRate: 1,
         fallback: true
       });
     }
 
-    // Convert prices
+    // Convert abroad prices to local currency
     const convertedPrices = { voice: {}, video: {} };
-
     for (const type of ['voice', 'video']) {
-      for (const [duration, price] of Object.entries(basePrices[type])) {
+      for (const [duration, price] of Object.entries(priceSet[type])) {
         convertedPrices[type][duration] = convertPrice(price, currency, rate);
       }
     }
@@ -81,6 +74,8 @@ const convertPrices = async (req, res) => {
       country: country || 'Unknown',
       currency: currency,
       symbol: symbol || currency,
+      countryCategory,
+      gstRate: 0,
       exchangeRate: rate,
       prices: convertedPrices,
     });

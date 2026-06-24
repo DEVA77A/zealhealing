@@ -1,5 +1,10 @@
 const Booking = require('../models/Booking');
 const Invoice = require('../models/Invoice');
+const { isSlotAvailable } = require('../services/slotService');
+const { sendClientBookingEmail, sendAdminBookingEmail } = require('../services/emailService');
+const { sendClientWhatsApp, sendAdminWhatsApp } = require('../services/whatsappService');
+const { createZoomMeeting } = require('../services/zoomService');
+const { GST_RATE_INDIA } = require('../config/pricingConfig');
 
 // @desc    Create new booking
 // @route   POST /api/bookings/create
@@ -14,7 +19,11 @@ const createBooking = async (req, res) => {
       customerName,
       customerEmail,
       customerPhone,
+      customerWhatsApp,
+      district,
+      state,
       country,
+      countryCategory,
       countryCode,
       currency,
       currencySymbol,
@@ -22,6 +31,8 @@ const createBooking = async (req, res) => {
       exchangeRate,
       baseINRAmount,
       convertedAmount,
+      appointmentDate,
+      appointmentTime,
       notes,
       paymentMethod,
       // Payment proof fields
@@ -31,27 +42,76 @@ const createBooking = async (req, res) => {
       paymentRemarks,
     } = req.body;
 
+    // Validate mandatory fields
+    if (!customerName || !customerEmail || !customerPhone || !customerWhatsApp || !district || !state || !country) {
+      return res.status(400).json({ message: 'All customer fields are required: Full Name, Email, Phone, WhatsApp, District, State, Country' });
+    }
+
+    // Validate appointment date/time
+    if (!appointmentDate || !appointmentTime) {
+      return res.status(400).json({ message: 'Appointment date and time are required' });
+    }
+
+    // Check slot availability
+    const slotAvailable = await isSlotAvailable(appointmentDate, appointmentTime, duration);
+    if (!slotAvailable) {
+      return res.status(409).json({ message: 'This time slot is no longer available. Please select a different slot.' });
+    }
+
+    // Calculate GST & total
+    const baseAmount = baseINRAmount || price;
+    const isIndia = countryCategory === 'india';
+    const gstRate = isIndia ? GST_RATE_INDIA : 0;
+    const gstAmount = isIndia ? Math.round(baseAmount * gstRate / 100) : 0;
+    const totalAmount = baseAmount + gstAmount;
+
+    // Determine call platform
+    let callPlatform = 'Normal Phone Call';
+    if (callType === 'Video Call') {
+      callPlatform = 'Zoom Meeting';
+    } else if (!isIndia) {
+      callPlatform = 'WhatsApp Voice Call';
+    }
+
+    // Calculate end time
+    const [h, m] = appointmentTime.split(':').map(Number);
+    const endMinutes = h * 60 + m + duration;
+    const endH = Math.floor(endMinutes / 60);
+    const endM = endMinutes % 60;
+    const appointmentEndTime = `${String(endH).padStart(2, '0')}:${String(endM).padStart(2, '0')}`;
+
     const booking = new Booking({
       userId: req.user ? req.user._id : null,
       appointmentType,
       callType,
       duration,
-      price,
+      price: baseAmount,
       customerName,
       customerEmail,
       customerPhone,
+      customerWhatsApp,
+      district,
+      state,
       country,
+      countryCategory: countryCategory || 'india',
       countryCode,
       currency,
       currencySymbol,
       timezone,
       exchangeRate,
-      baseINRAmount,
+      baseINRAmount: baseAmount,
       convertedAmount,
+      gstRate,
+      gstAmount,
+      totalAmount,
+      appointmentDate,
+      appointmentTime,
+      appointmentEndTime,
+      callPlatform,
       notes,
       paymentMethod,
       paymentStatus: 'Pending',
-      bookingStatus: 'Queued', // Always starts as Queued until admin accepts
+      bookingStatus: 'Queued',
       senderAccountNumber,
       transactionId,
       paymentScreenshot,
@@ -59,6 +119,35 @@ const createBooking = async (req, res) => {
     });
 
     const createdBooking = await booking.save();
+
+    // Create Zoom meeting for video calls (async, don't block response)
+    if (callType === 'Video Call') {
+      createZoomMeeting(createdBooking).then(async (zoomData) => {
+        if (zoomData) {
+          createdBooking.zoomMeetingId = zoomData.meetingId;
+          createdBooking.zoomMeetingLink = zoomData.meetingLink;
+          createdBooking.zoomMeetingPassword = zoomData.meetingPassword;
+          await createdBooking.save();
+        }
+      }).catch(err => console.error('[Zoom] Async error:', err.message));
+    }
+
+    // Send notifications (async, don't block response)
+    Promise.all([
+      sendClientBookingEmail(createdBooking).then(sent => {
+        if (sent) Booking.updateOne({ _id: createdBooking._id }, { emailSentToClient: true }).exec();
+      }),
+      sendAdminBookingEmail(createdBooking).then(sent => {
+        if (sent) Booking.updateOne({ _id: createdBooking._id }, { emailSentToAdmin: true }).exec();
+      }),
+      sendClientWhatsApp(createdBooking).then(sent => {
+        if (sent) Booking.updateOne({ _id: createdBooking._id }, { whatsappSentToClient: true }).exec();
+      }),
+      sendAdminWhatsApp(createdBooking).then(sent => {
+        if (sent) Booking.updateOne({ _id: createdBooking._id }, { whatsappSentToAdmin: true }).exec();
+      }),
+    ]).catch(err => console.error('[Notifications] Error:', err.message));
+
     res.status(201).json(createdBooking);
   } catch (error) {
     res.status(500).json({ message: error.message });
@@ -117,9 +206,11 @@ const updateBookingStatus = async (req, res) => {
       const existingInvoice = await Invoice.findOne({ bookingId: booking._id });
       if (!existingInvoice) {
         const invoiceNumber = `ZH-FY25-26/R14_${Math.floor(Math.random() * 10000)}`;
-        const subtotal = booking.convertedAmount || booking.price;
-        const SGST = subtotal * 0.025;
-        const CGST = subtotal * 0.025;
+        const subtotal = booking.baseINRAmount || booking.price;
+        const isIndia = booking.countryCategory === 'india';
+        const gstRate = isIndia ? GST_RATE_INDIA : 0;
+        const SGST = subtotal * (gstRate / 200); // Half of GST
+        const CGST = subtotal * (gstRate / 200); // Half of GST
         const grandTotal = subtotal + SGST + CGST;
 
         const invoice = new Invoice({
@@ -128,7 +219,7 @@ const updateBookingStatus = async (req, res) => {
           subtotal,
           SGST,
           CGST,
-          GST: 5,
+          GST: gstRate,
           roundOff: 0,
           grandTotal,
         });
@@ -188,4 +279,3 @@ module.exports = {
   deleteBooking,
   getMyBookings,
 };
-

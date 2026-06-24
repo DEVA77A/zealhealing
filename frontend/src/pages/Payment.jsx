@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { FaCopy, FaCheckCircle, FaCloudUploadAlt } from 'react-icons/fa';
+import { FaCopy, FaCheckCircle, FaCloudUploadAlt, FaCalendarAlt, FaClock } from 'react-icons/fa';
 import axios from 'axios';
 import { toast } from 'react-toastify';
 
@@ -29,8 +29,11 @@ const Payment = () => {
 
   if (!bookingData) return null;
 
+  const isIndia = bookingData.customerDetails.countryCategory === 'india';
   const packagePrice = bookingData.package.dynamicPrice || bookingData.package.price;
-  const totalAmount = (packagePrice * 1.05).toFixed(2);
+  const gstRate = isIndia ? 0.18 : 0;
+  const gstAmount = packagePrice * gstRate;
+  const totalAmount = (packagePrice + gstAmount).toFixed(2);
   const symbol = bookingData.pricingContext?.symbol || '₹';
   const currency = bookingData.pricingContext?.currency || 'INR';
 
@@ -57,7 +60,6 @@ const Payment = () => {
   };
 
   const handleManualPaymentSubmit = async () => {
-    // Validate required proof fields
     if (!transactionId.trim()) {
       toast.error('Please enter the Transaction ID / UTR Number');
       return;
@@ -83,10 +85,11 @@ const Payment = () => {
         currency: bookingData.pricingContext?.currency,
         currencySymbol: bookingData.pricingContext?.symbol,
         exchangeRate: bookingData.pricingContext?.exchangeRate,
+        appointmentDate: bookingData.appointment.date,
+        appointmentTime: bookingData.appointment.time,
         ...bookingData.customerDetails,
         paymentMethod: 'Manual Bank Transfer',
         paymentStatus: 'Pending',
-        // Payment proof
         senderAccountNumber,
         transactionId,
         paymentScreenshot,
@@ -96,10 +99,11 @@ const Payment = () => {
       const { data } = await axios.post('http://localhost:5000/api/bookings/create', payload, config);
       
       localStorage.removeItem('pendingBooking');
+      localStorage.removeItem('tempAppointment');
       navigate(`/success/${data._id}`);
       
     } catch (error) {
-      toast.error('Failed to submit booking. Please try again.');
+      toast.error(error.response?.data?.message || 'Failed to submit booking. Please try again.');
       setSubmitting(false);
     }
   };
@@ -107,9 +111,6 @@ const Payment = () => {
   const loadRazorpay = async () => {
     const script = document.createElement('script');
     script.src = 'https://checkout.razorpay.com/v1/checkout.js';
-    script.onerror = () => {
-      toast.error('Razorpay SDK failed to load. Are you online?');
-    };
     script.onload = async () => {
       try {
         const userInfo = JSON.parse(localStorage.getItem('userInfo'));
@@ -138,6 +139,8 @@ const Payment = () => {
                 currency: bookingData.pricingContext?.currency,
                 currencySymbol: bookingData.pricingContext?.symbol,
                 exchangeRate: bookingData.pricingContext?.exchangeRate,
+                appointmentDate: bookingData.appointment.date,
+                appointmentTime: bookingData.appointment.time,
                 ...bookingData.customerDetails,
                 paymentMethod: 'Razorpay',
                 paymentStatus: 'Completed',
@@ -146,6 +149,7 @@ const Payment = () => {
 
               const { data: bookingResult } = await axios.post('http://localhost:5000/api/bookings/create', payload, config);
               localStorage.removeItem('pendingBooking');
+              localStorage.removeItem('tempAppointment');
               navigate(`/success/${bookingResult._id}`);
             } catch (err) {
               toast.error('Payment Verification Failed');
@@ -156,9 +160,7 @@ const Payment = () => {
             email: bookingData.customerDetails.customerEmail,
             contact: bookingData.customerDetails.customerPhone,
           },
-          theme: {
-            color: '#2E7D32',
-          },
+          theme: { color: '#2E7D32' },
         };
 
         const rzp = new window.Razorpay(options);
@@ -170,99 +172,108 @@ const Payment = () => {
     document.body.appendChild(script);
   };
 
+  const formatTime12h = (time24) => {
+    const [h, m] = time24.split(':').map(Number);
+    const ampm = h >= 12 ? 'PM' : 'AM';
+    const h12 = h === 0 ? 12 : h > 12 ? h - 12 : h;
+    return `${String(h12).padStart(2, '0')}:${String(m).padStart(2, '0')} ${ampm}`;
+  };
+
   return (
     <div className="min-h-screen pt-24 pb-12 bg-sage-50 px-4">
-      <div className="max-w-5xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-8">
+      <div className="max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-8">
         
-        {/* Left Column — Bank Details */}
+        {/* Left Column — Summary & Bank */}
         <div className="space-y-6">
-          <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} className="card border-transparent">
-            <h2 className="text-3xl font-serif font-bold text-sage-900 mb-2">Finalize your healing</h2>
-            <p className="text-sage-700 mb-6">Your session is reserved for the next 15 minutes.</p>
-            <div className="flex items-end gap-3">
-              <span className="text-5xl font-bold text-darkGreen">{symbol}{totalAmount}</span>
-              <span className="text-sage-600 mb-1">Total Amount Due</span>
+          <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} className="card border-transparent shadow-md bg-white">
+            <div className="flex justify-between items-start mb-6">
+              <div>
+                <h2 className="text-3xl font-serif font-bold text-sage-900 mb-1">Finalize Payment</h2>
+                <p className="text-sage-500 text-sm">Secure your healing session below.</p>
+              </div>
+              <div className="text-right">
+                <span className="text-4xl font-bold text-darkGreen">{symbol}{totalAmount}</span>
+                <p className="text-xs text-sage-400 mt-1 uppercase tracking-widest font-bold">Total Payable</p>
+              </div>
+            </div>
+
+            <div className="bg-sage-50 rounded-2xl p-4 flex flex-wrap gap-6 items-center border border-sage-100">
+               <div className="flex items-center gap-2">
+                 <FaCalendarAlt className="text-darkGreen" />
+                 <span className="text-sm font-semibold text-sage-700">{new Date(bookingData.appointment.date).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}</span>
+               </div>
+               <div className="flex items-center gap-2">
+                 <FaClock className="text-darkGreen" />
+                 <span className="text-sm font-semibold text-sage-700">{formatTime12h(bookingData.appointment.time)}</span>
+               </div>
+               <div className="flex items-center gap-2 ml-auto">
+                 <span className="px-3 py-1 bg-darkGreen/10 text-darkGreen rounded-full text-[10px] font-bold uppercase">{bookingData.package.duration} Mins</span>
+               </div>
             </div>
           </motion.div>
 
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }} className="card bg-[#e3ebe3] border-transparent shadow-none">
             <h3 className="text-xl font-serif font-bold text-sage-900 mb-4">Manual Bank Transfer</h3>
-            <p className="text-sage-700 text-sm mb-6">Transfer exact amount to the following account details to confirm your session instantly.</p>
+            <p className="text-sage-700 text-sm mb-6 leading-relaxed">Transfer the exact amount to the following account to confirm your session instantly.</p>
             
             <div className="space-y-4">
               <div>
-                <p className="text-xs font-semibold text-sage-600 tracking-wider mb-1">BANK NAME</p>
-                <div className="flex justify-between items-center bg-white p-3 rounded-lg border border-sage-200">
-                  <span className="text-sage-900 font-medium">Global Wellness Trust</span>
-                  <button onClick={() => handleCopy('Global Wellness Trust', 'bank')} className="text-sage-400 hover:text-darkGreen transition-colors">
+                <p className="text-[10px] font-bold text-sage-600 tracking-widest mb-1 uppercase">Bank Name</p>
+                <div className="flex justify-between items-center bg-white p-3.5 rounded-xl border border-sage-200">
+                  <span className="text-sage-900 font-semibold">Global Wellness Trust - HDFC Bank</span>
+                  <button onClick={() => handleCopy('Global Wellness Trust', 'bank')} className="text-sage-300 hover:text-darkGreen transition-colors">
                     {copiedField === 'bank' ? <FaCheckCircle className="text-darkGreen" /> : <FaCopy />}
                   </button>
                 </div>
               </div>
               
               <div>
-                <p className="text-xs font-semibold text-sage-600 tracking-wider mb-1">ACCOUNT NUMBER</p>
-                <div className="flex justify-between items-center bg-white p-3 rounded-lg border border-sage-200">
-                  <span className="text-sage-900 font-medium">987 654 321 000</span>
-                  <button onClick={() => handleCopy('987654321000', 'acc')} className="text-sage-400 hover:text-darkGreen transition-colors">
+                <p className="text-[10px] font-bold text-sage-600 tracking-widest mb-1 uppercase">Account Number</p>
+                <div className="flex justify-between items-center bg-white p-3.5 rounded-xl border border-sage-200">
+                  <span className="text-sage-900 font-semibold">987 654 321 000</span>
+                  <button onClick={() => handleCopy('987654321000', 'acc')} className="text-sage-300 hover:text-darkGreen transition-colors">
                     {copiedField === 'acc' ? <FaCheckCircle className="text-darkGreen" /> : <FaCopy />}
                   </button>
                 </div>
               </div>
 
-              <div>
-                <p className="text-xs font-semibold text-sage-600 tracking-wider mb-1">SWIFT/BIC CODE</p>
-                <div className="flex justify-between items-center bg-white p-3 rounded-lg border border-sage-200">
-                  <span className="text-sage-900 font-medium">ZEALWELLXX</span>
-                  <button onClick={() => handleCopy('ZEALWELLXX', 'swift')} className="text-sage-400 hover:text-darkGreen transition-colors">
-                    {copiedField === 'swift' ? <FaCheckCircle className="text-darkGreen" /> : <FaCopy />}
-                  </button>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <p className="text-[10px] font-bold text-sage-600 tracking-widest mb-1 uppercase">IFSC Code</p>
+                  <div className="flex justify-between items-center bg-white p-3.5 rounded-xl border border-sage-200">
+                    <span className="text-sage-900 font-semibold">HDFC0001234</span>
+                    <button onClick={() => handleCopy('HDFC0001234', 'ifsc')} className="text-sage-300 hover:text-darkGreen transition-colors">
+                      {copiedField === 'ifsc' ? <FaCheckCircle className="text-darkGreen" /> : <FaCopy />}
+                    </button>
+                  </div>
+                </div>
+                <div>
+                  <p className="text-[10px] font-bold text-sage-600 tracking-widest mb-1 uppercase">UPI ID</p>
+                  <div className="flex justify-between items-center bg-white p-3.5 rounded-xl border border-sage-200">
+                    <span className="text-sage-900 font-semibold">zealhealing@upi</span>
+                    <button onClick={() => handleCopy('zealhealing@upi', 'upi')} className="text-sage-300 hover:text-darkGreen transition-colors">
+                      {copiedField === 'upi' ? <FaCheckCircle className="text-darkGreen" /> : <FaCopy />}
+                    </button>
+                  </div>
                 </div>
               </div>
-            </div>
-            <div className="mt-6 flex gap-4 text-xs text-sage-600">
-              <span className="flex items-center gap-1"><FaCheckCircle/> SSL Secure Payment</span>
-              <span className="flex items-center gap-1"><FaCheckCircle/> 256-bit Encryption</span>
             </div>
           </motion.div>
         </div>
 
-        {/* Right Column — Payment Proof Form + QR */}
+        {/* Right Column — Payment Proof */}
         <div className="space-y-6">
-          <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} className="card border-transparent text-center py-8">
-            <h3 className="text-xl font-serif font-bold text-sage-900 mb-2">Scan to Pay</h3>
-            <p className="text-sage-700 text-sm mb-6">Works with any global banking app or digital wallet.</p>
-            
-            <div className="bg-sage-100 p-6 rounded-2xl mx-auto w-64 mb-8 border border-sage-200 shadow-inner flex items-center justify-center">
-               <div className="bg-white p-4 rounded-xl shadow-md border-b-4 border-sage-300">
-                  <img src="https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=upi://pay?pa=zealhealing@upi&pn=ZealHealing" alt="QR Code" className="w-32 h-32" />
-               </div>
-            </div>
-          </motion.div>
-
-          {/* Payment Proof Form */}
-          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.15 }} className="card border-transparent">
+          <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} className="card border-transparent bg-white shadow-sm p-8">
             <h3 className="text-xl font-serif font-bold text-sage-900 mb-2">Submit Payment Proof</h3>
-            <p className="text-sage-600 text-sm mb-6">After making the transfer, fill in the details below so we can verify your payment quickly.</p>
+            <p className="text-sage-500 text-sm mb-8">Verification usually takes 1-2 hours during business hours.</p>
 
-            <div className="space-y-4">
+            <div className="space-y-5">
               <div>
-                <label className="block text-sage-800 font-medium mb-1 text-sm">Your Account Number / Sender Name</label>
+                <label className="block text-sage-700 font-bold mb-2 text-[11px] uppercase tracking-wider">Transaction ID / UTR Number *</label>
                 <input 
                   type="text" 
-                  className="input-field w-full"
-                  placeholder="e.g. 1234567890 or John Doe"
-                  value={senderAccountNumber}
-                  onChange={(e) => setSenderAccountNumber(e.target.value)}
-                />
-              </div>
-
-              <div>
-                <label className="block text-sage-800 font-medium mb-1 text-sm">Transaction ID / UTR Number *</label>
-                <input 
-                  type="text" 
-                  className="input-field w-full"
-                  placeholder="e.g. UTR123456789"
+                  className="input-field w-full bg-sage-50 border-sage-100" 
+                  placeholder="Paste your transaction ID here"
                   value={transactionId}
                   onChange={(e) => setTransactionId(e.target.value)}
                   required
@@ -270,50 +281,38 @@ const Payment = () => {
               </div>
 
               <div>
-                <label className="block text-sage-800 font-medium mb-1 text-sm">Payment Screenshot *</label>
-                <div className="relative">
-                  <label className="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed border-sage-300 rounded-xl cursor-pointer bg-sage-50 hover:bg-sage-100 transition-colors">
-                    {screenshotPreview ? (
-                      <img src={screenshotPreview} alt="Preview" className="h-28 object-contain rounded-lg" />
-                    ) : (
-                      <div className="flex flex-col items-center">
-                        <FaCloudUploadAlt className="text-3xl text-sage-400 mb-2" />
-                        <p className="text-sm text-sage-500">Click to upload screenshot</p>
-                        <p className="text-xs text-sage-400 mt-1">PNG, JPG up to 5MB</p>
-                      </div>
-                    )}
-                    <input 
-                      type="file" 
-                      className="hidden" 
-                      accept="image/*"
-                      onChange={handleScreenshotChange}
-                    />
-                  </label>
-                </div>
+                <label className="block text-sage-700 font-bold mb-2 text-[11px] uppercase tracking-wider">Upload Screenshot *</label>
+                <label className="flex flex-col items-center justify-center w-full h-44 border-2 border-dashed border-sage-200 rounded-2xl cursor-pointer bg-sage-50 hover:bg-sage-100 transition-all overflow-hidden relative">
+                  {screenshotPreview ? (
+                    <img src={screenshotPreview} alt="Preview" className="w-full h-full object-contain p-2" />
+                  ) : (
+                    <div className="flex flex-col items-center px-4 text-center">
+                      <FaCloudUploadAlt className="text-4xl text-sage-300 mb-3" />
+                      <p className="text-sm font-bold text-sage-600">Click to upload screenshot</p>
+                      <p className="text-xs text-sage-400 mt-2">JPG or PNG formats allowed</p>
+                    </div>
+                  )}
+                  <input type="file" className="hidden" accept="image/*" onChange={handleScreenshotChange} />
+                </label>
               </div>
 
-              <div>
-                <label className="block text-sage-800 font-medium mb-1 text-sm">Additional Remarks (Optional)</label>
-                <textarea 
-                  className="input-field w-full"
-                  rows="2"
-                  placeholder="Any extra info about the payment..."
-                  value={paymentRemarks}
-                  onChange={(e) => setPaymentRemarks(e.target.value)}
-                ></textarea>
+              <button 
+                onClick={handleManualPaymentSubmit} 
+                className={`btn-primary w-full py-5 text-xl font-serif font-bold shadow-xl shadow-darkGreen/10 transition-all ${submitting ? 'opacity-70' : ''}`}
+                disabled={submitting}
+              >
+                {submitting ? 'Authenticating...' : "I've Made The Transfer"}
+              </button>
+              
+              <div className="relative py-4">
+                <div className="absolute inset-0 flex items-center"><div className="w-full border-t border-sage-100"></div></div>
+                <div className="relative flex justify-center"><span className="bg-white px-4 text-xs font-bold text-sage-300 uppercase tracking-widest">or pay instantly</span></div>
               </div>
+
+              <button onClick={loadRazorpay} className="w-full py-4 rounded-2xl border-2 border-darkGreen text-darkGreen font-bold hover:bg-sage-50 transition-colors flex items-center justify-center gap-3">
+                Pay with Card / Netbanking
+              </button>
             </div>
-
-            <button 
-              onClick={handleManualPaymentSubmit} 
-              className="btn-primary w-full py-4 text-lg mt-6"
-              disabled={submitting}
-            >
-              {submitting ? 'Submitting...' : "I've Made the Transfer — Submit Proof"}
-            </button>
-            <button onClick={loadRazorpay} className="w-full py-4 text-lg rounded-full border border-darkGreen text-darkGreen font-medium hover:bg-sage-50 transition-colors mt-4">
-              Pay with Credit Card
-            </button>
           </motion.div>
         </div>
 

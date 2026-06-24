@@ -25,6 +25,7 @@ const bookingSchema = mongoose.Schema(
       type: Number,
       required: true,
     },
+    // Customer Information
     customerName: {
       type: String,
       required: true,
@@ -37,21 +38,56 @@ const bookingSchema = mongoose.Schema(
       type: String,
       required: true,
     },
+    customerWhatsApp: {
+      type: String,
+      required: true,
+    },
+    district: {
+      type: String,
+      required: true,
+    },
+    state: {
+      type: String,
+      required: true,
+    },
     country: {
       type: String,
       required: true,
     },
+    countryCategory: {
+      type: String,
+      required: true,
+      enum: ['india', 'abroad'],
+      default: 'india',
+    },
+    // Scheduling
+    appointmentDate: {
+      type: Date,
+      required: true,
+    },
+    appointmentTime: {
+      type: String,
+      required: true,
+    },
+    appointmentEndTime: {
+      type: String,
+    },
+    timezone: { type: String },
+    // Pricing
     countryCode: { type: String },
     currency: { type: String },
     currencySymbol: { type: String },
-    timezone: { type: String },
     exchangeRate: { type: Number },
     baseINRAmount: { type: Number },
     convertedAmount: { type: Number },
+    gstRate: { type: Number, default: 0 },
+    gstAmount: { type: Number, default: 0 },
+    totalAmount: { type: Number },
     conversionTimestamp: { type: Date, default: Date.now },
     notes: {
       type: String,
     },
+    // Payment
     paymentMethod: {
       type: String,
       required: true,
@@ -80,6 +116,14 @@ const bookingSchema = mongoose.Schema(
       enum: ['Queued', 'Scheduled', 'Accepted', 'Completed', 'Cancelled', 'Rejected'],
       default: 'Queued',
     },
+    // Zoom Meeting Details (for Video Calls)
+    zoomMeetingId: { type: String },
+    zoomMeetingLink: { type: String },
+    zoomMeetingPassword: { type: String },
+    // Communication platform info
+    callPlatform: {
+      type: String, // 'Normal Phone Call', 'WhatsApp Voice Call', 'Zoom Meeting'
+    },
     // Payment proof fields — submitted by customer
     senderAccountNumber: {
       type: String,
@@ -93,12 +137,19 @@ const bookingSchema = mongoose.Schema(
     paymentRemarks: {
       type: String,
     },
+    // Notification tracking
+    emailSentToClient: { type: Boolean, default: false },
+    emailSentToAdmin: { type: Boolean, default: false },
+    whatsappSentToClient: { type: Boolean, default: false },
+    whatsappSentToAdmin: { type: Boolean, default: false },
   },
   {
     timestamps: true,
   }
 );
 
+// Index for preventing double bookings
+bookingSchema.index({ appointmentDate: 1, appointmentTime: 1, bookingStatus: 1 });
+
 const Booking = mongoose.model('Booking', bookingSchema);
 module.exports = Booking;
-

@@ -88,28 +88,50 @@ const About = () => {
       {/* ─── Founder Section ─── */}
       <section className="py-20 md:py-28">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <motion.div
-            initial="hidden"
-            whileInView="visible"
-            viewport={{ once: true, margin: '-80px' }}
-            variants={fadeInUp}
-            custom={0.2}
-            className="max-w-3xl mx-auto text-center"
-          >
-            <span className="inline-block text-sm font-semibold uppercase tracking-widest text-darkGreen mb-3">
-              Our Founder
-            </span>
-            <h2 className="text-3xl md:text-5xl font-serif font-bold text-sage-900 mb-6 leading-tight">
-              Baghya Ashok
-            </h2>
-            <div className="w-16 h-1 bg-darkGreen rounded-full mb-8 mx-auto" />
-            <p className="text-sage-800 text-lg leading-relaxed mb-6">
-              Baghya Ashok is a distinguished <strong className="text-sage-900">Reiki Grand Master</strong> and a premier <strong className="text-sage-900">Tarot and Angel Card reader</strong> based in Navi Mumbai, India. She is the founder, director, and CEO of Zeal Healing, an organization dedicated to promoting well-being through various healing modalities.
-            </p>
-            <p className="text-sage-700 leading-relaxed">
-              With years of profound experience in energy healing, spiritual consultation, and holistic wellness, Baghya has empowered countless individuals on their journey toward inner peace, clarity, and transformation.
-            </p>
-          </motion.div>
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-20 items-center">
+            {/* Image Column */}
+            <motion.div
+              initial={{ opacity: 0, x: -50 }}
+              whileInView={{ opacity: 1, x: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.8 }}
+              className="relative order-2 lg:order-1"
+            >
+              <div className="relative z-10 rounded-2xl overflow-hidden shadow-2xl border-[12px] border-white max-w-md mx-auto">
+                <img 
+                  src="/founder.jpg" 
+                  alt="Baghya Ashok - Founder of Zeal Healing" 
+                  className="w-full h-full object-cover"
+                />
+              </div>
+              {/* Decorative elements */}
+              <div className="absolute -top-10 -left-10 w-40 h-40 bg-sage-200/50 rounded-full mix-blend-multiply filter blur-2xl opacity-70" />
+              <div className="absolute -bottom-10 -right-10 w-40 h-40 bg-darkGreen/10 rounded-full mix-blend-multiply filter blur-2xl opacity-70" />
+            </motion.div>
+
+            {/* Text Column */}
+            <motion.div
+              initial="hidden"
+              whileInView="visible"
+              viewport={{ once: true, margin: '-80px' }}
+              variants={fadeInUp}
+              className="order-1 lg:order-2 flex flex-col justify-center text-center lg:text-left"
+            >
+              <span className="inline-block text-sm font-semibold uppercase tracking-widest text-darkGreen mb-3">
+                Our Founder
+              </span>
+              <h2 className="text-3xl md:text-5xl font-serif font-bold text-sage-900 mb-6 leading-tight">
+                Baghya Ashok
+              </h2>
+              <div className="w-16 h-1 bg-darkGreen rounded-full mb-8 mx-auto lg:mx-0" />
+              <p className="text-sage-800 text-lg leading-relaxed mb-6">
+                Baghya Ashok is a distinguished <strong className="text-sage-900">Reiki Grand Master</strong> and a premier <strong className="text-sage-900">Tarot and Angel Card reader</strong> based in Navi Mumbai, India. She is the founder, director, and CEO of Zeal Healing, an organization dedicated to promoting well-being through various healing modalities.
+              </p>
+              <p className="text-sage-700 leading-relaxed font-medium">
+                With years of profound experience in energy healing, spiritual consultation, and holistic wellness, Baghya has empowered countless individuals on their journey toward inner peace, clarity, and transformation.
+              </p>
+            </motion.div>
+          </div>
         </div>
       </section>
 

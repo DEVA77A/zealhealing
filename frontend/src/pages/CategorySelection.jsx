@@ -1,8 +1,16 @@
 import { motion } from 'framer-motion';
 import { Link } from 'react-router-dom';
 import { FaPhoneAlt, FaVideo } from 'react-icons/fa';
+import { usePricing } from '../context/PricingContext';
 
 const CategorySelection = () => {
+  const { symbol, prices, countryCategory, loading } = usePricing();
+
+  const getStartingPrice = (type) => {
+    if (loading || !prices || !prices[type]) return '...';
+    return prices[type][15] || prices[type]['15'];
+  };
+
   return (
     <div className="min-h-screen pt-24 pb-12 bg-sage-50 px-4">
       <div className="max-w-4xl mx-auto">
@@ -22,9 +30,12 @@ const CategorySelection = () => {
                 <FaPhoneAlt />
               </div>
               <h3 className="text-2xl font-serif font-semibold text-sage-900 mb-2">Voice Call</h3>
-              <p className="text-sage-700 mb-4">(Abroad only)</p>
+              <p className="text-sage-700 mb-4">
+                Starting from {symbol}{getStartingPrice('voice')}
+                {countryCategory === 'india' && <span className="block text-xs text-sage-500 mt-1">+ 18% GST</span>}
+              </p>
               <span className="text-darkGreen font-medium flex items-center justify-center gap-2">
-                View Packages <span className="transform transition-transform group-hover:translate-x-1">→</span>
+                View Durations <span className="transform transition-transform group-hover:translate-x-1">→</span>
               </span>
             </Link>
           </motion.div>
@@ -39,9 +50,12 @@ const CategorySelection = () => {
                 <FaVideo />
               </div>
               <h3 className="text-2xl font-serif font-semibold text-sage-900 mb-2">Video Call</h3>
-              <p className="text-sage-700 mb-4">(Abroad only)</p>
+              <p className="text-sage-700 mb-4">
+                Starting from {symbol}{getStartingPrice('video')}
+                {countryCategory === 'india' && <span className="block text-xs text-sage-500 mt-1">+ 18% GST</span>}
+              </p>
               <span className="text-darkGreen font-medium flex items-center justify-center gap-2">
-                View Packages <span className="transform transition-transform group-hover:translate-x-1">→</span>
+                View Durations <span className="transform transition-transform group-hover:translate-x-1">→</span>
               </span>
             </Link>
           </motion.div>

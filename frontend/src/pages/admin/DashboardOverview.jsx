@@ -35,15 +35,19 @@ const DashboardOverview = () => {
   const { overview, charts } = stats;
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-        <h2 className="text-3xl font-serif font-bold text-sage-900">Dashboard Overview</h2>
-        <div className="relative">
-          <FaFilter className="absolute left-3 top-1/2 transform -translate-y-1/2 text-sage-400" />
+    <div className="space-y-10 pb-12">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-6">
+        <div>
+          <h2 className="text-4xl font-serif font-bold text-slate-900">Dashboard</h2>
+          <p className="text-sage-600 font-medium mt-1">Operational insights and performance metrics</p>
+        </div>
+        
+        <div className="relative group">
+          <FaFilter className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gold group-hover:scale-110 transition-transform" />
           <select 
             value={timeRange} 
             onChange={e => { setLoading(true); setTimeRange(e.target.value); }}
-            className="pl-10 pr-8 py-2 border border-sage-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-sage-500 appearance-none bg-white font-medium text-sage-700 shadow-sm"
+            className="pl-12 pr-10 py-3 bg-white border border-slate-200 rounded-2xl focus:outline-none focus:ring-4 focus:ring-gold/10 appearance-none font-bold text-slate-700 shadow-sm transition-all cursor-pointer hover:border-gold/30"
           >
             <option value="all">All Time</option>
             <option value="7">Last 7 Days</option>
@@ -54,82 +58,93 @@ const DashboardOverview = () => {
         </div>
       </div>
       
-      {/* Top Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6">
-        <div className="bg-white rounded-xl shadow-sm border border-sage-100 p-6 border-l-4 border-l-darkGreen">
-          <h3 className="text-sage-500 text-sm font-semibold uppercase tracking-wider mb-2">Total Revenue</h3>
-          <p className="text-3xl font-bold text-sage-900">₹{overview.totalRevenue.toLocaleString()}</p>
-        </div>
-        <div className="bg-white rounded-xl shadow-sm border border-sage-100 p-6 border-l-4 border-l-sage-500">
-          <h3 className="text-sage-500 text-sm font-semibold uppercase tracking-wider mb-2">Monthly Revenue</h3>
-          <p className="text-3xl font-bold text-sage-900">₹{overview.monthlyRevenue.toLocaleString()}</p>
-        </div>
-        <div className="bg-white rounded-xl shadow-sm border border-sage-100 p-6 border-l-4 border-l-blue-500">
-          <h3 className="text-sage-500 text-sm font-semibold uppercase tracking-wider mb-2">Total Bookings</h3>
-          <p className="text-3xl font-bold text-sage-900">{overview.totalBookings}</p>
-        </div>
-        <div className="bg-white rounded-xl shadow-sm border border-sage-100 p-6 border-l-4 border-l-purple-500">
-          <h3 className="text-sage-500 text-sm font-semibold uppercase tracking-wider mb-2">Total Users</h3>
-          <p className="text-3xl font-bold text-sage-900">{overview.totalUsers}</p>
-        </div>
+      {/* Top Metrics Grid */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+        {[
+          { label: 'Total Revenue', value: `₹${overview.totalRevenue.toLocaleString()}`, color: 'from-darkGreen to-[#1a2f23]', icon: '💰' },
+          { label: 'Monthly Revenue', value: `₹${overview.monthlyRevenue.toLocaleString()}`, color: 'from-[#2d4d3a] to-[#3a5d4a]', icon: '📈' },
+          { label: 'Bookings', value: overview.totalBookings, color: 'from-gold to-[#c5a037]', icon: '📅' },
+          { label: 'Total Users', value: overview.totalUsers, color: 'from-[#4a6b5a] to-[#5a7b6a]', icon: '👥' },
+        ].map((item, idx) => (
+          <div key={idx} className="relative group perspective-1000">
+            <div className="absolute -inset-1 bg-gradient-to-r from-gold/20 to-transparent rounded-[2rem] blur opacity-0 group-hover:opacity-100 transition duration-500"></div>
+            <div className="bg-white rounded-[2rem] shadow-xl shadow-slate-200/50 border border-slate-100 p-8 relative flex flex-col items-center text-center transition-all duration-500 group-hover:-translate-y-2">
+              <div className="w-14 h-14 rounded-2xl bg-slate-50 flex items-center justify-center text-2xl mb-4 group-hover:scale-110 transition-transform">
+                {item.icon}
+              </div>
+              <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-2">{item.label}</h3>
+              <p className="text-3xl font-bold font-serif text-slate-900">{item.value}</p>
+              <div className={`absolute bottom-0 left-0 right-0 h-1.5 rounded-b-[2rem] bg-gradient-to-r ${item.color}`} />
+            </div>
+          </div>
+        ))}
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-        <div className="bg-white rounded-xl shadow-sm border border-sage-100 p-6">
-          <p className="text-sage-500 text-sm font-semibold">Today's Revenue</p>
-          <p className="text-xl font-bold text-sage-900">₹{overview.todaysRevenue.toLocaleString()}</p>
-        </div>
-        <div className="bg-white rounded-xl shadow-sm border border-sage-100 p-6">
-          <p className="text-sage-500 text-sm font-semibold">Pending Bookings</p>
-          <p className="text-xl font-bold text-yellow-600">{overview.pendingBookings}</p>
-        </div>
-        <div className="bg-white rounded-xl shadow-sm border border-sage-100 p-6">
-          <p className="text-sage-500 text-sm font-semibold">Completed Sessions</p>
-          <p className="text-xl font-bold text-green-600">{overview.completedSessions}</p>
-        </div>
-        <div className="bg-white rounded-xl shadow-sm border border-sage-100 p-6">
-          <p className="text-sage-500 text-sm font-semibold">Total Classes Sold</p>
-          <p className="text-xl font-bold text-sage-900">{overview.totalClassesSold}</p>
-        </div>
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
+        {[
+          { label: "Today's Revenue", val: overview.todaysRevenue, prefix: '₹', color: 'text-darkGreen' },
+          { label: 'Pending', val: overview.pendingBookings, prefix: '', color: 'text-amber-500' },
+          { label: 'Completed', val: overview.completedSessions, prefix: '', color: 'text-emerald-500' },
+          { label: 'Classes Sold', val: overview.totalClassesSold, prefix: '', color: 'text-slate-800' },
+        ].map((s, i) => (
+          <div key={i} className="bg-white rounded-2xl p-5 border border-slate-100 shadow-sm flex flex-col">
+            <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">{s.label}</span>
+            <span className={`text-xl font-bold ${s.color}`}>{s.prefix}{s.val.toLocaleString()}</span>
+          </div>
+        ))}
       </div>
 
-      {/* Charts */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-8">
-        <div className="bg-white rounded-xl shadow-sm border border-sage-100 p-6">
-          <h3 className="text-xl font-serif font-bold text-sage-900 mb-6">Revenue Growth (Last 6 Months)</h3>
-          <div className="h-72">
+      {/* Visual Analytics */}
+      <div className="grid grid-cols-1 lg:grid-cols-5 gap-10">
+        <div className="lg:col-span-3 bg-white rounded-[2.5rem] shadow-2xl shadow-slate-200/40 border border-slate-100 p-10 overflow-hidden relative">
+          <div className="flex justify-between items-center mb-10">
+            <div>
+              <h3 className="text-2xl font-serif font-bold text-slate-900">Revenue Growth</h3>
+              <p className="text-sm text-slate-500 font-medium">Performance over last 6 months</p>
+            </div>
+          </div>
+          <div className="h-80 -ml-6">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={charts.revenueChart}>
-                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
-                <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{fill: '#64748b'}} />
-                <YAxis axisLine={false} tickLine={false} tick={{fill: '#64748b'}} />
-                <Tooltip cursor={{fill: '#f1f5f9'}} contentStyle={{borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)'}} />
-                <Bar dataKey="revenue" fill="#2b4c3b" radius={[4, 4, 0, 0]} />
+                <defs>
+                  <linearGradient id="barGradient" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor="#2b4c3b" stopOpacity={1} />
+                    <stop offset="100%" stopColor="#d4af37" stopOpacity={0.8} />
+                  </linearGradient>
+                </defs>
+                <CartesianGrid strokeDasharray="6 6" vertical={false} stroke="#f1f5f9" />
+                <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{fill: '#94a3b8', fontSize: 10, fontWeight: 700}} dy={10} />
+                <YAxis axisLine={false} tickLine={false} tick={{fill: '#94a3b8', fontSize: 10, fontWeight: 700}} dx={-10} />
+                <Tooltip 
+                  cursor={{fill: '#f8fafc'}} 
+                  contentStyle={{borderRadius: '16px', border: 'none', boxShadow: '0 20px 25px -5px rgb(0 0 0 / 0.1)', padding: '12px'}}
+                />
+                <Bar dataKey="revenue" fill="url(#barGradient)" radius={[8, 8, 8, 8]} barSize={24} />
               </BarChart>
             </ResponsiveContainer>
           </div>
         </div>
 
-        <div className="bg-white rounded-xl shadow-sm border border-sage-100 p-6">
-          <h3 className="text-xl font-serif font-bold text-sage-900 mb-6">Sales by Country</h3>
-          <div className="h-72">
+        <div className="lg:col-span-2 bg-white rounded-[2.5rem] shadow-2xl shadow-slate-200/40 border border-slate-100 p-10 flex flex-col">
+          <h3 className="text-2xl font-serif font-bold text-slate-900 mb-2">Global Reach</h3>
+          <p className="text-sm text-slate-500 font-medium mb-8">Sales distribution by country</p>
+          <div className="flex-1 flex items-center justify-center min-h-[300px]">
             <ResponsiveContainer width="100%" height="100%">
               <PieChart>
                 <Pie
                   data={charts.countryChart}
                   cx="50%"
-                  cy="50%"
-                  labelLine={false}
-                  label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
+                  cy="45%"
+                  innerRadius={70}
                   outerRadius={100}
-                  fill="#8884d8"
+                  paddingAngle={8}
                   dataKey="value"
                 >
                   {charts.countryChart.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                    <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} stroke="rgba(255,255,255,0.2)" strokeWidth={2} />
                   ))}
                 </Pie>
-                <Tooltip contentStyle={{borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)'}} />
+                <Tooltip contentStyle={{borderRadius: '16px', border: 'none', boxShadow: '0 20px 25px -5px rgb(0 0 0 / 0.1)'}} />
               </PieChart>
             </ResponsiveContainer>
           </div>

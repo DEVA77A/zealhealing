@@ -10,10 +10,12 @@ export const PricingProvider = ({ children }) => {
     country: 'India',
     currency: 'INR',
     symbol: '₹',
+    countryCategory: 'india',
+    gstRate: 18,
     exchangeRate: 1,
     prices: {
-      voice: { 15: 2000, 30: 4000, 45: 6000, 60: 8000 },
-      video: { 15: 4000, 30: 8000, 45: 12000, 60: 16000 }
+      voice: { 15: 1000, 30: 2000, 45: 3000, 60: 4000 },
+      video: { 15: 2000, 30: 4000, 45: 6000, 60: 8000 }
     },
     loading: true
   });
@@ -21,9 +23,6 @@ export const PricingProvider = ({ children }) => {
   const fetchPricing = async (manualCurrency = null, manualCountry = null, manualSymbol = null) => {
     try {
       setPricingData(prev => ({ ...prev, loading: true }));
-      // Using relative URL so it works in production with proxy, or fallback to localhost
-      // Assuming Vite proxy or environment variable is setup. Let's use full URL if proxy isn't guaranteed.
-      // Wait, let's use the same base URL approach as other services. Since we don't have the context of how frontend calls backend, usually it's '/api/...'. I will use '/api/pricing/convert'. Wait, the project doesn't have proxy in vite config. I'll use `http://localhost:5000/api/pricing/convert` for dev, or dynamically.
       const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
       let url = `${API_URL}/api/pricing/convert`;
       
@@ -47,6 +46,8 @@ export const PricingProvider = ({ children }) => {
         country: data.country,
         currency: data.currency,
         symbol: data.symbol,
+        countryCategory: data.countryCategory,
+        gstRate: data.gstRate,
         exchangeRate: data.exchangeRate,
         prices: data.prices,
         loading: false
@@ -57,7 +58,9 @@ export const PricingProvider = ({ children }) => {
         localStorage.setItem('selectedCountry', JSON.stringify({
           country: data.country,
           currency: data.currency,
-          symbol: data.symbol
+          symbol: data.symbol,
+          countryCategory: data.countryCategory,
+          gstRate: data.gstRate
         }));
       }
 

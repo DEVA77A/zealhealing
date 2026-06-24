@@ -31,7 +31,7 @@ const Navbar = () => {
           
           {/* Logo Section */}
           <Link to="/" className="flex items-center gap-2 z-50 relative group" onClick={closeMobileMenu}>
-            <img src="/logo.png" alt="Zeal Healing Logo" className="h-14 w-14 object-contain mix-blend-multiply" />
+            <img src="/logo.png" alt="Zeal Healing Logo" className="h-14 w-14 object-contain shadow-sm rounded-full" />
             <span className="font-serif text-2xl font-semibold text-darkGreen tracking-tight">
               Zeal Healing
             </span>

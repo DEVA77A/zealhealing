@@ -10,34 +10,50 @@ const seedClasses = async () => {
       console.log('Seeding initial classes from pricingConfig...');
       const classesToSeed = [];
       
-      for (const [duration, price] of Object.entries(basePrices.voice)) {
+      const getImageForDuration = (duration, type) => {
+        if (type === 'voice') {
+          if (duration === 15) return '/tarot.png';
+          if (duration === 30) return '/baghya-ashok.png';
+          if (duration === 45) return '/hero-bg.png';
+          return '/about-hero.png';
+        } else {
+          if (duration === 15) return '/about-hero.png';
+          if (duration === 30) return '/hero-bg.png';
+          if (duration === 45) return '/baghya-ashok.png';
+          return '/tarot.png';
+        }
+      };
+
+      for (const [duration, price] of Object.entries(basePrices.india.voice)) {
+        const d = Number(duration);
         classesToSeed.push({
           title: 'Tarot Reading Appointment',
-          description: duration === '15' ? 'A quick insight into a single question or area of focus.' : 
-                       duration === '30' ? 'In-depth reading covering past, present, and potential future paths.' :
-                       duration === '45' ? 'Comprehensive analysis of complex situations with detailed guidance.' :
+          description: d === 15 ? 'A quick insight into a single question or area of focus.' : 
+                       d === 30 ? 'In-depth reading covering past, present, and potential future paths.' :
+                       d === 45 ? 'Comprehensive analysis of complex situations with detailed guidance.' :
                        'An expansive session for complete spiritual alignment and deep dives.',
           category: 'Tarot',
           type: 'voice',
-          duration: Number(duration),
+          duration: d,
           price: price,
-          image: '/tarot.png',
+          image: getImageForDuration(d, 'voice'),
           status: 'Active',
         });
       }
 
-      for (const [duration, price] of Object.entries(basePrices.video)) {
+      for (const [duration, price] of Object.entries(basePrices.india.video)) {
+        const d = Number(duration);
         classesToSeed.push({
           title: 'Tarot Reading Appointment',
-          description: duration === '15' ? 'Face-to-face quick insight into a single question.' : 
-                       duration === '30' ? 'Face-to-face in-depth reading with visual card explanations.' :
-                       duration === '45' ? 'Face-to-face comprehensive analysis of complex situations.' :
+          description: d === 15 ? 'Face-to-face quick insight into a single question.' : 
+                       d === 30 ? 'Face-to-face in-depth reading with visual card explanations.' :
+                       d === 45 ? 'Face-to-face comprehensive analysis of complex situations.' :
                        'An expansive face-to-face session for complete spiritual alignment.',
           category: 'Tarot',
           type: 'video',
-          duration: Number(duration),
+          duration: d,
           price: price,
-          image: '/tarot.png',
+          image: getImageForDuration(d, 'video'),
           status: 'Active',
         });
       }
