@@ -1,9 +1,9 @@
 const Booking = require('../models/Booking');
+const Invoice = require('../models/Invoice');
 
 // @desc    Create new booking
 // @route   POST /api/bookings/create
-// @access  Public / Private (Based on requirements, guest checkout is implied, but let's assume auth is required or we handle guest)
-// Let's assume user must be logged in to book, as there's a User model.
+// @access  Private
 const createBooking = async (req, res) => {
   try {
     const {
@@ -24,6 +24,11 @@ const createBooking = async (req, res) => {
       convertedAmount,
       notes,
       paymentMethod,
+      // Payment proof fields
+      senderAccountNumber,
+      transactionId,
+      paymentScreenshot,
+      paymentRemarks,
     } = req.body;
 
     const booking = new Booking({
@@ -45,6 +50,12 @@ const createBooking = async (req, res) => {
       convertedAmount,
       notes,
       paymentMethod,
+      paymentStatus: 'Pending',
+      bookingStatus: 'Queued', // Always starts as Queued until admin accepts
+      senderAccountNumber,
+      transactionId,
+      paymentScreenshot,
+      paymentRemarks,
     });
 
     const createdBooking = await booking.save();
@@ -91,15 +102,49 @@ const updateBookingStatus = async (req, res) => {
     const { paymentStatus, bookingStatus } = req.body;
     const booking = await Booking.findById(req.params.id);
 
-    if (booking) {
-      if (paymentStatus) booking.paymentStatus = paymentStatus;
-      if (bookingStatus) booking.bookingStatus = bookingStatus;
-
-      const updatedBooking = await booking.save();
-      res.json(updatedBooking);
-    } else {
-      res.status(404).json({ message: 'Booking not found' });
+    if (!booking) {
+      return res.status(404).json({ message: 'Booking not found' });
     }
+
+    if (paymentStatus) booking.paymentStatus = paymentStatus;
+    if (bookingStatus) booking.bookingStatus = bookingStatus;
+
+    // When admin accepts the booking, mark payment as completed and generate the invoice
+    if (bookingStatus === 'Accepted') {
+      booking.paymentStatus = 'Completed';
+
+      // Auto-generate invoice on acceptance if it doesn't already exist
+      const existingInvoice = await Invoice.findOne({ bookingId: booking._id });
+      if (!existingInvoice) {
+        const invoiceNumber = `ZH-FY25-26/R14_${Math.floor(Math.random() * 10000)}`;
+        const subtotal = booking.convertedAmount || booking.price;
+        const SGST = subtotal * 0.025;
+        const CGST = subtotal * 0.025;
+        const grandTotal = subtotal + SGST + CGST;
+
+        const invoice = new Invoice({
+          bookingId: booking._id,
+          invoiceNumber,
+          subtotal,
+          SGST,
+          CGST,
+          GST: 5,
+          roundOff: 0,
+          grandTotal,
+        });
+
+        await invoice.save();
+        booking.invoiceNumber = invoiceNumber;
+      }
+    }
+
+    // If rejected, mark payment as failed
+    if (bookingStatus === 'Rejected') {
+      booking.paymentStatus = 'Failed';
+    }
+
+    const updatedBooking = await booking.save();
+    res.json(updatedBooking);
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
@@ -123,10 +168,24 @@ const deleteBooking = async (req, res) => {
   }
 };
 
+// @desc    Get logged in user bookings
+// @route   GET /api/bookings/mybookings
+// @access  Private
+const getMyBookings = async (req, res) => {
+  try {
+    const bookings = await Booking.find({ userId: req.user._id }).sort({ createdAt: -1 });
+    res.json(bookings);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
 module.exports = {
   createBooking,
   getBookingById,
   getBookings,
   updateBookingStatus,
   deleteBooking,
+  getMyBookings,
 };
+

@@ -4,7 +4,7 @@ const bookingSchema = mongoose.Schema(
   {
     userId: {
       type: mongoose.Schema.Types.ObjectId,
-      required: false, // Make it optional for guest bookings if needed, but per requirements we have login flow. Let's make it required eventually.
+      required: false,
       ref: 'User',
     },
     appointmentType: {
@@ -18,7 +18,7 @@ const bookingSchema = mongoose.Schema(
       enum: ['Voice Call', 'Video Call'],
     },
     duration: {
-      type: Number, // in minutes
+      type: Number,
       required: true,
     },
     price: {
@@ -77,8 +77,21 @@ const bookingSchema = mongoose.Schema(
     bookingStatus: {
       type: String,
       required: true,
-      enum: ['Scheduled', 'Completed', 'Cancelled'],
-      default: 'Scheduled',
+      enum: ['Queued', 'Scheduled', 'Accepted', 'Completed', 'Cancelled', 'Rejected'],
+      default: 'Queued',
+    },
+    // Payment proof fields — submitted by customer
+    senderAccountNumber: {
+      type: String,
+    },
+    transactionId: {
+      type: String,
+    },
+    paymentScreenshot: {
+      type: String, // base64 data URI or file path
+    },
+    paymentRemarks: {
+      type: String,
     },
   },
   {
@@ -88,3 +101,4 @@ const bookingSchema = mongoose.Schema(
 
 const Booking = mongoose.model('Booking', bookingSchema);
 module.exports = Booking;
+

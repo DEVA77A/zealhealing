@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { packages } from '../data/packages';
+import axios from 'axios';
 import { usePricing } from '../context/PricingContext';
 
 const Checkout = () => {
@@ -9,6 +9,7 @@ const Checkout = () => {
   const navigate = useNavigate();
   const { country, currency, symbol, getPrice, exchangeRate } = usePricing();
   const [selectedPkg, setSelectedPkg] = useState(null);
+  const [loading, setLoading] = useState(true);
 
   const [formData, setFormData] = useState({
     customerName: '',
@@ -34,12 +35,17 @@ const Checkout = () => {
       }));
     }
 
-    const pkg = packages.find(p => p.id === id);
-    if (pkg) {
-      setSelectedPkg(pkg);
-    } else {
-      navigate('/sessions'); // Redirect if invalid package
-    }
+    const fetchClassDetails = async () => {
+      try {
+        const { data } = await axios.get(`http://localhost:5000/api/classes/${id}`);
+        setSelectedPkg(data);
+        setLoading(false);
+      } catch (error) {
+        console.error('Error fetching class:', error);
+        navigate('/sessions'); // Redirect if invalid package
+      }
+    };
+    fetchClassDetails();
   }, [id, navigate]);
 
   const handleChange = (e) => {
@@ -63,7 +69,7 @@ const Checkout = () => {
     navigate('/payment');
   };
 
-  if (!selectedPkg) return null;
+  if (loading || !selectedPkg) return <div className="min-h-screen pt-24 pb-12 flex justify-center items-center">Loading Checkout...</div>;
 
   return (
     <div className="min-h-screen pt-24 pb-12 bg-sage-50 px-4">

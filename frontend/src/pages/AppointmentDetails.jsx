@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { motion } from 'framer-motion';
-import { packages } from '../data/packages';
+import axios from 'axios';
 import { usePricing } from '../context/PricingContext';
 
 const AppointmentDetails = () => {
@@ -11,24 +10,36 @@ const AppointmentDetails = () => {
   
   const [selectedPkg, setSelectedPkg] = useState(null);
   const [relatedPkgs, setRelatedPkgs] = useState([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const pkg = packages.find(p => p.id === id);
-    if (pkg) {
-      setSelectedPkg(pkg);
-      // Find other packages of the same type (voice or video)
-      setRelatedPkgs(packages.filter(p => p.type === pkg.type));
-    }
-  }, [id]);
+    const fetchClassDetails = async () => {
+      try {
+        const { data: allPackages } = await axios.get('http://localhost:5000/api/classes');
+        const pkg = allPackages.find(p => p._id === id);
+        if (pkg) {
+          setSelectedPkg(pkg);
+          setRelatedPkgs(allPackages.filter(p => p.type === pkg.type && p.status === 'Active'));
+        } else {
+          navigate('/sessions');
+        }
+        setLoading(false);
+      } catch (error) {
+        console.error('Error fetching class details:', error);
+        setLoading(false);
+      }
+    };
+    fetchClassDetails();
+  }, [id, navigate]);
 
-  if (!selectedPkg) return <div className="min-h-screen flex items-center justify-center">Loading...</div>;
+  if (loading || !selectedPkg) return <div className="min-h-screen flex items-center justify-center">Loading...</div>;
 
   const handleDurationSelect = (pkgId) => {
     navigate(`/book/${pkgId}`);
   };
 
   const handleContinue = () => {
-    navigate(`/checkout/${selectedPkg.id}`);
+    navigate(`/checkout/${selectedPkg._id}`);
   };
 
   return (
@@ -37,7 +48,7 @@ const AppointmentDetails = () => {
         
         {/* Left Side: Image */}
         <div className="w-full md:w-1/2 bg-sage-200">
-          <img src="/tarot.png" alt="Tarot Appointment" className="w-full h-full object-cover min-h-[400px]" />
+          <img src={selectedPkg.image || "/tarot.png"} alt={selectedPkg.title} className="w-full h-full object-cover min-h-[400px]" />
         </div>
 
         {/* Right Side: Details */}
@@ -56,10 +67,10 @@ const AppointmentDetails = () => {
             <div className="grid grid-cols-2 gap-3">
               {relatedPkgs.map(pkg => (
                 <button
-                  key={pkg.id}
-                  onClick={() => handleDurationSelect(pkg.id)}
+                  key={pkg._id}
+                  onClick={() => handleDurationSelect(pkg._id)}
                   className={`py-3 px-4 rounded-xl border-2 transition-all ${
-                    selectedPkg.id === pkg.id
+                    selectedPkg._id === pkg._id
                       ? 'border-darkGreen bg-sage-50 text-darkGreen font-semibold shadow-sm'
                       : 'border-sage-100 text-sage-600 hover:border-sage-300'
                   }`}

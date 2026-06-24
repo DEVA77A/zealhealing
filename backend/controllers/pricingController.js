@@ -1,6 +1,6 @@
 const { detectLocation } = require('../services/locationService');
 const { getExchangeRate, convertPrice } = require('../services/currencyService');
-const { basePrices } = require('../config/pricingConfig');
+const Class = require('../models/Class');
 
 // @desc    Detect user location based on IP
 // @route   GET /api/pricing/detect
@@ -16,12 +16,22 @@ const detectUserLocation = async (req, res) => {
   }
 };
 
+// Helper to get base prices from DB
+const getBasePricesFromDB = async () => {
+  const classes = await Class.find({ status: 'Active' });
+  const basePrices = { voice: {}, video: {} };
+  classes.forEach((cls) => {
+    if (cls.type === 'voice') basePrices.voice[cls.duration] = cls.price;
+    if (cls.type === 'video') basePrices.video[cls.duration] = cls.price;
+  });
+  return basePrices;
+};
+
 // @desc    Convert prices to target currency
 // @route   GET /api/pricing/convert
 // @access  Public
 const convertPrices = async (req, res) => {
   try {
-    // If currency is passed in query, use it. Otherwise, detect from IP.
     let { currency, country, symbol } = req.query;
 
     if (!currency) {
@@ -31,6 +41,8 @@ const convertPrices = async (req, res) => {
       country = locationData.country;
       symbol = locationData.currencySymbol;
     }
+
+    const basePrices = await getBasePricesFromDB();
 
     if (currency === 'INR') {
       return res.json({
@@ -57,10 +69,7 @@ const convertPrices = async (req, res) => {
     }
 
     // Convert prices
-    const convertedPrices = {
-      voice: {},
-      video: {},
-    };
+    const convertedPrices = { voice: {}, video: {} };
 
     for (const type of ['voice', 'video']) {
       for (const [duration, price] of Object.entries(basePrices[type])) {

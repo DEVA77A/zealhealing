@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { FaCopy, FaCheckCircle } from 'react-icons/fa';
+import { FaCopy, FaCheckCircle, FaCloudUploadAlt } from 'react-icons/fa';
 import axios from 'axios';
 import { toast } from 'react-toastify';
 
@@ -9,6 +9,14 @@ const Payment = () => {
   const navigate = useNavigate();
   const [bookingData, setBookingData] = useState(null);
   const [copiedField, setCopiedField] = useState(null);
+  const [submitting, setSubmitting] = useState(false);
+
+  // Payment proof fields
+  const [senderAccountNumber, setSenderAccountNumber] = useState('');
+  const [transactionId, setTransactionId] = useState('');
+  const [paymentScreenshot, setPaymentScreenshot] = useState(null);
+  const [paymentRemarks, setPaymentRemarks] = useState('');
+  const [screenshotPreview, setScreenshotPreview] = useState(null);
 
   useEffect(() => {
     const data = JSON.parse(localStorage.getItem('pendingBooking'));
@@ -32,8 +40,34 @@ const Payment = () => {
     setTimeout(() => setCopiedField(null), 2000);
   };
 
+  const handleScreenshotChange = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      if (file.size > 5 * 1024 * 1024) {
+        toast.error('Screenshot must be less than 5MB');
+        return;
+      }
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setPaymentScreenshot(reader.result); // base64
+        setScreenshotPreview(reader.result);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
   const handleManualPaymentSubmit = async () => {
-    // Usually we would submit this to backend to mark as pending manual verification
+    // Validate required proof fields
+    if (!transactionId.trim()) {
+      toast.error('Please enter the Transaction ID / UTR Number');
+      return;
+    }
+    if (!paymentScreenshot) {
+      toast.error('Please upload a screenshot of your payment');
+      return;
+    }
+
+    setSubmitting(true);
     try {
       const userInfo = JSON.parse(localStorage.getItem('userInfo'));
       const token = userInfo ? userInfo.token : '';
@@ -52,22 +86,25 @@ const Payment = () => {
         ...bookingData.customerDetails,
         paymentMethod: 'Manual Bank Transfer',
         paymentStatus: 'Pending',
+        // Payment proof
+        senderAccountNumber,
+        transactionId,
+        paymentScreenshot,
+        paymentRemarks,
       };
 
-      // Create booking
       const { data } = await axios.post('http://localhost:5000/api/bookings/create', payload, config);
       
-      // Clear pending and navigate to success
       localStorage.removeItem('pendingBooking');
       navigate(`/success/${data._id}`);
       
     } catch (error) {
       toast.error('Failed to submit booking. Please try again.');
+      setSubmitting(false);
     }
   };
 
   const loadRazorpay = async () => {
-    // Dynamically load razorpay script
     const script = document.createElement('script');
     script.src = 'https://checkout.razorpay.com/v1/checkout.js';
     script.onerror = () => {
@@ -79,23 +116,19 @@ const Payment = () => {
         const token = userInfo ? userInfo.token : '';
         const config = { headers: { Authorization: `Bearer ${token}` } };
 
-        // 1. Create order on backend
         const { data: order } = await axios.post('http://localhost:5000/api/payment/create-order', { amount: totalAmount, currency: currency }, config);
 
-        // 2. Open Razorpay checkout
         const options = {
-          key: 'your_razorpay_key_id', // Needs to be loaded from env or backend config ideally, using placeholder to avoid error
+          key: 'your_razorpay_key_id',
           amount: order.amount,
           currency: order.currency,
           name: 'Zeal Healing',
           description: bookingData.package.title,
           order_id: order.id,
           handler: async function (response) {
-            // 3. Verify payment
             try {
               await axios.post('http://localhost:5000/api/payment/verify', response, config);
               
-              // 4. Create booking as completed
               const payload = {
                 appointmentType: bookingData.package.title,
                 callType: bookingData.package.type === 'voice' ? 'Voice Call' : 'Video Call',
@@ -141,7 +174,7 @@ const Payment = () => {
     <div className="min-h-screen pt-24 pb-12 bg-sage-50 px-4">
       <div className="max-w-5xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-8">
         
-        {/* Left Column */}
+        {/* Left Column — Bank Details */}
         <div className="space-y-6">
           <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} className="card border-transparent">
             <h2 className="text-3xl font-serif font-bold text-sage-900 mb-2">Finalize your healing</h2>
@@ -194,23 +227,91 @@ const Payment = () => {
           </motion.div>
         </div>
 
-        {/* Right Column */}
+        {/* Right Column — Payment Proof Form + QR */}
         <div className="space-y-6">
-          <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} className="card border-transparent text-center py-10">
+          <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} className="card border-transparent text-center py-8">
             <h3 className="text-xl font-serif font-bold text-sage-900 mb-2">Scan to Pay</h3>
-            <p className="text-sage-700 text-sm mb-8">Works with any global banking app or digital wallet.</p>
+            <p className="text-sage-700 text-sm mb-6">Works with any global banking app or digital wallet.</p>
             
-            <div className="bg-sage-100 p-6 rounded-2xl mx-auto w-64 mb-10 border border-sage-200 shadow-inner flex items-center justify-center">
-               {/* Simulating the sleek QR stand from the image */}
+            <div className="bg-sage-100 p-6 rounded-2xl mx-auto w-64 mb-8 border border-sage-200 shadow-inner flex items-center justify-center">
                <div className="bg-white p-4 rounded-xl shadow-md border-b-4 border-sage-300">
                   <img src="https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=upi://pay?pa=zealhealing@upi&pn=ZealHealing" alt="QR Code" className="w-32 h-32" />
                </div>
             </div>
+          </motion.div>
 
-            <button onClick={handleManualPaymentSubmit} className="btn-primary w-full py-4 text-lg mb-4">
-              I've Made the Transfer
+          {/* Payment Proof Form */}
+          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.15 }} className="card border-transparent">
+            <h3 className="text-xl font-serif font-bold text-sage-900 mb-2">Submit Payment Proof</h3>
+            <p className="text-sage-600 text-sm mb-6">After making the transfer, fill in the details below so we can verify your payment quickly.</p>
+
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sage-800 font-medium mb-1 text-sm">Your Account Number / Sender Name</label>
+                <input 
+                  type="text" 
+                  className="input-field w-full"
+                  placeholder="e.g. 1234567890 or John Doe"
+                  value={senderAccountNumber}
+                  onChange={(e) => setSenderAccountNumber(e.target.value)}
+                />
+              </div>
+
+              <div>
+                <label className="block text-sage-800 font-medium mb-1 text-sm">Transaction ID / UTR Number *</label>
+                <input 
+                  type="text" 
+                  className="input-field w-full"
+                  placeholder="e.g. UTR123456789"
+                  value={transactionId}
+                  onChange={(e) => setTransactionId(e.target.value)}
+                  required
+                />
+              </div>
+
+              <div>
+                <label className="block text-sage-800 font-medium mb-1 text-sm">Payment Screenshot *</label>
+                <div className="relative">
+                  <label className="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed border-sage-300 rounded-xl cursor-pointer bg-sage-50 hover:bg-sage-100 transition-colors">
+                    {screenshotPreview ? (
+                      <img src={screenshotPreview} alt="Preview" className="h-28 object-contain rounded-lg" />
+                    ) : (
+                      <div className="flex flex-col items-center">
+                        <FaCloudUploadAlt className="text-3xl text-sage-400 mb-2" />
+                        <p className="text-sm text-sage-500">Click to upload screenshot</p>
+                        <p className="text-xs text-sage-400 mt-1">PNG, JPG up to 5MB</p>
+                      </div>
+                    )}
+                    <input 
+                      type="file" 
+                      className="hidden" 
+                      accept="image/*"
+                      onChange={handleScreenshotChange}
+                    />
+                  </label>
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-sage-800 font-medium mb-1 text-sm">Additional Remarks (Optional)</label>
+                <textarea 
+                  className="input-field w-full"
+                  rows="2"
+                  placeholder="Any extra info about the payment..."
+                  value={paymentRemarks}
+                  onChange={(e) => setPaymentRemarks(e.target.value)}
+                ></textarea>
+              </div>
+            </div>
+
+            <button 
+              onClick={handleManualPaymentSubmit} 
+              className="btn-primary w-full py-4 text-lg mt-6"
+              disabled={submitting}
+            >
+              {submitting ? 'Submitting...' : "I've Made the Transfer — Submit Proof"}
             </button>
-            <button onClick={loadRazorpay} className="w-full py-4 text-lg rounded-full border border-darkGreen text-darkGreen font-medium hover:bg-sage-50 transition-colors">
+            <button onClick={loadRazorpay} className="w-full py-4 text-lg rounded-full border border-darkGreen text-darkGreen font-medium hover:bg-sage-50 transition-colors mt-4">
               Pay with Credit Card
             </button>
           </motion.div>
