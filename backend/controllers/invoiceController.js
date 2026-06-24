@@ -36,16 +36,20 @@ const generateInvoice = async (req, res) => {
       return res.status(403).json({ message: 'Invoice not available. Your booking is still in queue and awaiting admin approval.' });
     }
 
-    // Determine pricing and taxes (18% GST -> 9% SGST, 9% CGST)
-    const baseTotal = booking.convertedAmount || booking.price;
-    // The baseTotal in the booking is currently treated as the grand total, so we must reverse-calculate the subtotal to match 18% GST.
-    // If user paid 1180, subtotal is 1000, GST is 180.
-    const subtotal = baseTotal / 1.18;
-    const SGST = subtotal * 0.09;
-    const CGST = subtotal * 0.09;
-    const GST = 18;
-    const grandTotal = Math.round(subtotal + SGST + CGST);
-    const roundOff = grandTotal - (subtotal + SGST + CGST);
+    // Use totalAmount from booking (which includes GST) or fall back to price
+    const grandTotal = booking.totalAmount || booking.convertedAmount || booking.price;
+    const totalTax = booking.gstAmount || (grandTotal - (booking.price || grandTotal));
+    const subtotal = grandTotal - totalTax;
+    
+    const SGST = totalTax / 2;
+    const CGST = totalTax / 2;
+    const GST = booking.gstRate || (totalTax > 0 ? 18 : 0);
+    const roundOff = 0; 
+
+    // DEBUG LOG
+    console.log(`[Invoice] Generating PDF for Booking ${booking._id}`);
+    console.log(`[Invoice] grandTotal: ${grandTotal}, totalTax: ${totalTax}, subtotal: ${subtotal}`);
+
 
     // Check if invoice already exists
     let invoice = await Invoice.findOne({ bookingId: booking._id });
@@ -68,12 +72,12 @@ const generateInvoice = async (req, res) => {
       booking.invoiceNumber = invoiceNumber;
       await booking.save();
     } else {
-      // Update invoice to reflect 18% GST if it was generated with old 5% logic
-      if (invoice.GST !== 18) {
+      // Sync invoice with current booking calculation if they differ
+      if (invoice.grandTotal !== grandTotal || invoice.subtotal !== subtotal || invoice.GST !== GST) {
         invoice.subtotal = subtotal;
         invoice.SGST = SGST;
         invoice.CGST = CGST;
-        invoice.GST = 18;
+        invoice.GST = GST;
         invoice.grandTotal = grandTotal;
         invoice.roundOff = roundOff;
         await invoice.save();
@@ -160,7 +164,7 @@ const generateInvoice = async (req, res) => {
     doc.text('Nos', 310, rowTop, { width: 40, align: 'center' });
     doc.text(subtotal.toFixed(2), 350, rowTop, { width: 70, align: 'right' });
     doc.text('18.0%', 420, rowTop, { width: 40, align: 'right' });
-    doc.text(baseTotal.toFixed(2), 480, rowTop, { width: 70, align: 'right' });
+    doc.text(grandTotal.toFixed(2), 480, rowTop, { width: 70, align: 'right' });
 
     // --- Bottom Section ---
     const summaryTop = rowTop + 50;

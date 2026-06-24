@@ -24,6 +24,7 @@ import Payment from './pages/Payment';
 import PaymentSuccess from './pages/PaymentSuccess';
 import About from './pages/About';
 import UserProfile from './pages/UserProfile';
+import MyBookings from './pages/MyBookings';
 
 // Admin Pages
 import DashboardOverview from './pages/admin/DashboardOverview';
@@ -60,6 +61,7 @@ const AppContent = () => {
           <Route path="/success/:id" element={<ProtectedRoute><PaymentSuccess /></ProtectedRoute>} />
           <Route path="/about" element={<ProtectedRoute><About /></ProtectedRoute>} />
           <Route path="/profile" element={<ProtectedRoute><UserProfile /></ProtectedRoute>} />
+          <Route path="/my-bookings" element={<ProtectedRoute><MyBookings /></ProtectedRoute>} />
 
           {/* Admin Routes with Layout */}
           <Route path="/admin" element={<ProtectedRoute adminOnly><AdminLayout /></ProtectedRoute>}>

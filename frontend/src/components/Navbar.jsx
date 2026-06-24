@@ -42,6 +42,7 @@ const Navbar = () => {
             <Link to="/" className="text-sage-800 hover:text-darkGreen transition-colors font-medium border-b-2 border-transparent hover:border-darkGreen">Home</Link>
             <Link to="/classes" className="text-sage-800 hover:text-darkGreen transition-colors font-medium border-b-2 border-transparent hover:border-darkGreen">Classes</Link>
             <Link to="/sessions" className="text-sage-800 hover:text-darkGreen transition-colors font-medium border-b-2 border-transparent hover:border-darkGreen">Sessions</Link>
+            {user && <Link to="/my-bookings" className="text-sage-800 hover:text-darkGreen transition-colors font-medium border-b-2 border-transparent hover:border-darkGreen">My Bookings</Link>}
             <Link to="/about" className="text-sage-800 hover:text-darkGreen transition-colors font-medium border-b-2 border-transparent hover:border-darkGreen">About</Link>
           </div>
 
@@ -114,6 +115,7 @@ const Navbar = () => {
               <Link to="/" onClick={closeMobileMenu} className="block px-3 py-2 rounded-md text-base font-medium text-sage-800 hover:text-darkGreen hover:bg-sage-100">Home</Link>
               <Link to="/classes" onClick={closeMobileMenu} className="block px-3 py-2 rounded-md text-base font-medium text-sage-800 hover:text-darkGreen hover:bg-sage-100">Classes</Link>
               <Link to="/sessions" onClick={closeMobileMenu} className="block px-3 py-2 rounded-md text-base font-medium text-sage-800 hover:text-darkGreen hover:bg-sage-100">Sessions</Link>
+              {user && <Link to="/my-bookings" onClick={closeMobileMenu} className="block px-3 py-2 rounded-md text-base font-medium text-sage-800 hover:text-darkGreen hover:bg-sage-100">My Bookings</Link>}
               <Link to="/about" onClick={closeMobileMenu} className="block px-3 py-2 rounded-md text-base font-medium text-sage-800 hover:text-darkGreen hover:bg-sage-100">About</Link>
               
               <div className="px-3 py-2">

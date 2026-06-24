@@ -27,20 +27,20 @@ const getDashboardStats = async (req, res) => {
     
     // Revenue calculations for the selected range
     const completedBookings = await Booking.find({ paymentStatus: 'Completed', ...bookingFilter });
-    const totalRevenue = completedBookings.reduce((acc, curr) => acc + (curr.baseINRAmount || curr.price), 0);
+    const totalRevenue = completedBookings.reduce((acc, curr) => acc + (curr.totalAmount || curr.convertedAmount || curr.price), 0);
 
     // This month's revenue (from the filtered set)
     const startOfMonth = new Date();
     startOfMonth.setDate(1);
     startOfMonth.setHours(0, 0, 0, 0);
     const monthlyBookings = completedBookings.filter(b => b.bookingDate >= startOfMonth);
-    const monthlyRevenue = monthlyBookings.reduce((acc, curr) => acc + (curr.baseINRAmount || curr.price), 0);
+    const monthlyRevenue = monthlyBookings.reduce((acc, curr) => acc + (curr.totalAmount || curr.convertedAmount || curr.price), 0);
 
     // Today's revenue
     const today = new Date();
     today.setHours(0, 0, 0, 0);
     const dailyBookings = completedBookings.filter(b => b.bookingDate >= today);
-    const todaysRevenue = dailyBookings.reduce((acc, curr) => acc + (curr.baseINRAmount || curr.price), 0);
+    const todaysRevenue = dailyBookings.reduce((acc, curr) => acc + (curr.totalAmount || curr.convertedAmount || curr.price), 0);
 
     // Pending vs Completed (using range filter)
     const pendingBookings = await Booking.countDocuments({ bookingStatus: 'Scheduled', ...bookingFilter });
@@ -60,7 +60,7 @@ const getDashboardStats = async (req, res) => {
       
       const monthRev = allCompletedBookings
         .filter(b => b.bookingDate >= start && b.bookingDate <= end)
-        .reduce((acc, curr) => acc + (curr.baseINRAmount || curr.price), 0);
+        .reduce((acc, curr) => acc + (curr.totalAmount || curr.convertedAmount || curr.price), 0);
         
       revenueChart.push({ name: monthName, revenue: monthRev });
     }
@@ -69,7 +69,7 @@ const getDashboardStats = async (req, res) => {
     const countryData = {};
     completedBookings.forEach(b => {
       if (!countryData[b.country]) countryData[b.country] = 0;
-      countryData[b.country] += (b.baseINRAmount || b.price);
+      countryData[b.country] += (b.totalAmount || b.convertedAmount || b.price);
     });
     const countryChart = Object.keys(countryData).map(k => ({ name: k, value: countryData[k] }));
 
@@ -114,7 +114,7 @@ const getUsers = async (req, res) => {
     // Attach total bookings and spending for each user
     const usersWithStats = await Promise.all(users.map(async (u) => {
       const bookings = await Booking.find({ userId: u._id, paymentStatus: 'Completed' });
-      const totalSpending = bookings.reduce((acc, curr) => acc + (curr.baseINRAmount || curr.price), 0);
+      const totalSpending = bookings.reduce((acc, curr) => acc + (curr.totalAmount || curr.convertedAmount || curr.price), 0);
       return {
         ...u.toObject(),
         totalBookings: bookings.length,
