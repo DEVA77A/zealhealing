@@ -11,6 +11,7 @@ const BookingManagement = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState('All');
   const [viewingInvoice, setViewingInvoice] = useState(null);
+  const [adminModal, setAdminModal] = useState(null);
   const { getToken } = useAuth();
 
   useEffect(() => {
@@ -45,6 +46,20 @@ const BookingManagement = () => {
       }
     } catch (error) {
       toast.error('Failed to update status');
+    }
+  };
+
+  const updateAdminDetails = async (id, details) => {
+    try {
+      const { data } = await axios.put(`http://localhost:5000/api/admin/bookings/${id}`, 
+        details,
+        { headers: { Authorization: `Bearer ${getToken()}` } }
+      );
+      setBookings(bookings.map(b => b._id === id ? data : b));
+      toast.success('Session details updated');
+      setAdminModal(null);
+    } catch (error) {
+      toast.error('Update failed');
     }
   };
 
@@ -252,7 +267,11 @@ const BookingManagement = () => {
                     </div>
                   </td>
                   <td className="p-8">
-                    <p className="font-serif font-bold text-slate-900 text-lg group-hover:text-darkGreen transition-colors">{booking.customerName}</p>
+                    <button onClick={() => setAdminModal(booking)} className="text-left group focus:outline-none">
+                      <p className="font-serif font-bold text-slate-900 text-lg group-hover:text-darkGreen transition-colors underline decoration-gold/20 underline-offset-8">
+                        {booking.customerName}
+                      </p>
+                    </button>
                     <div className="flex items-center gap-2 mt-1.5 opacity-60">
                        <FaWhatsapp className="text-emerald-500 text-xs" />
                        <span className="text-[11px] font-bold">{booking.customerWhatsApp || booking.customerPhone}</span>
@@ -275,9 +294,8 @@ const BookingManagement = () => {
                     </span>
                   </td>
                   <td className="p-8 text-right space-x-3 whitespace-nowrap">
-                    <button onClick={() => setProofModal(booking)} className="p-3 bg-slate-50 text-slate-400 rounded-2xl hover:bg-gold hover:text-white transition-all shadow-sm active:scale-90" title="Examine Dossier">
-                      <FaSearch />
-                    </button>
+                    {/* Proof modal button removed per user request */}
+
 
                     {['Queued'].includes(booking.bookingStatus) && (
                       <button onClick={() => updateStatus(booking._id, 'Accepted')} className="p-3 bg-emerald-50 text-emerald-600 rounded-2xl hover:bg-emerald-600 hover:text-white transition-all shadow-sm active:scale-90" title="Initiate Path">
@@ -348,6 +366,82 @@ const BookingManagement = () => {
                 className="w-full h-full border-none"
                 title="Invoice Viewer"
               />
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Session Management Modal (Admin Click User Name) */}
+      {adminModal && (
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-md z-[60] flex items-center justify-center p-4" onClick={() => setAdminModal(null)}>
+          <div className="bg-white shadow-2xl w-full max-w-xl overflow-hidden animate-in fade-in zoom-in duration-300" onClick={(e) => e.stopPropagation()}>
+            <div className="p-10">
+               <div className="flex justify-between items-start mb-8">
+                 <div>
+                   <h3 className="text-3xl font-serif font-bold text-slate-900">Session Protocol</h3>
+                   <p className="text-xs text-gold font-black uppercase tracking-[0.2em] mt-1">{adminModal.customerName}</p>
+                 </div>
+                 <button onClick={() => setAdminModal(null)} className="text-slate-300 hover:text-rose-500 transition-colors">
+                   <FaTimesCircle size={28} />
+                 </button>
+               </div>
+
+               <div className="space-y-8">
+                 {/* Appointment Sync */}
+                 <div className="bg-slate-50 p-6 border border-slate-100 flex items-center justify-between">
+                   <div className="flex items-center gap-4">
+                     <div className="w-12 h-12 bg-white flex items-center justify-center text-darkGreen shadow-sm">
+                       <FaCalendarCheck size={20} />
+                     </div>
+                     <div>
+                       <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Scheduled Path</p>
+                       <p className="font-bold text-slate-900">{new Date(adminModal.appointmentDate).toLocaleDateString(undefined, { dateStyle: 'medium' })}</p>
+                     </div>
+                   </div>
+                   <div className="flex items-center gap-3">
+                     <span className="text-xs font-bold text-slate-500 uppercase tracking-tighter">Confirm Execution</span>
+                     <input 
+                       type="checkbox" 
+                       defaultChecked={adminModal.isManuallyConfirmed}
+                       onChange={(e) => updateAdminDetails(adminModal._id, { isManuallyConfirmed: e.target.checked })}
+                       className="w-6 h-6 border-2 border-slate-200 text-darkGreen focus:ring-darkGreen cursor-pointer"
+                     />
+                   </div>
+                 </div>
+
+                 {/* Treatment Boxes */}
+                 <div className="grid grid-cols-1 gap-6">
+                   <div className="space-y-3">
+                     <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Spiritual Artifacts (Crystals)</label>
+                     <textarea 
+                       id="crystals-box"
+                       className="w-full p-6 bg-slate-50 border border-slate-100 focus:ring-0 focus:outline-none focus:border-gold transition-all text-sm font-medium min-h-[100px] resize-none"
+                       placeholder="Assign crystals for this session..."
+                       defaultValue={adminModal.crystals}
+                       onBlur={(e) => updateAdminDetails(adminModal._id, { crystals: e.target.value })}
+                     />
+                   </div>
+                   <div className="space-y-3">
+                     <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Essence & Remedies (Medicine)</label>
+                     <textarea 
+                       id="medicine-box"
+                       className="w-full p-6 bg-slate-50 border border-slate-100 focus:ring-0 focus:outline-none focus:border-gold transition-all text-sm font-medium min-h-[100px] resize-none"
+                       placeholder="Recommended spiritual remedies..."
+                       defaultValue={adminModal.medicine}
+                       onBlur={(e) => updateAdminDetails(adminModal._id, { medicine: e.target.value })}
+                     />
+                   </div>
+                 </div>
+               </div>
+
+               <div className="mt-10 flex gap-4">
+                 <button 
+                   onClick={() => setAdminModal(null)}
+                   className="flex-1 py-5 bg-darkGreen text-white font-black text-xs uppercase tracking-[0.2em] hover:bg-emerald-900 transition-all active:scale-95"
+                 >
+                   Archive Protocol
+                 </button>
+               </div>
             </div>
           </div>
         </div>

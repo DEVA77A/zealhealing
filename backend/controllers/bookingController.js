@@ -176,7 +176,11 @@ const getBookingById = async (req, res) => {
 // @access  Private/Admin
 const getBookings = async (req, res) => {
   try {
-    const bookings = await Booking.find({}).populate('userId', 'id name email');
+    const query = {};
+    if (req.query.userId) {
+      query.userId = req.query.userId;
+    }
+    const bookings = await Booking.find(query).populate('userId', 'id name email').sort({ appointmentDate: -1 });
     res.json(bookings);
   } catch (error) {
     res.status(500).json({ message: error.message });
@@ -188,7 +192,7 @@ const getBookings = async (req, res) => {
 // @access  Private/Admin
 const updateBookingStatus = async (req, res) => {
   try {
-    const { paymentStatus, bookingStatus } = req.body;
+    const { paymentStatus, bookingStatus, isManuallyConfirmed, crystals, medicine } = req.body;
     const booking = await Booking.findById(req.params.id);
 
     if (!booking) {
@@ -197,6 +201,9 @@ const updateBookingStatus = async (req, res) => {
 
     if (paymentStatus) booking.paymentStatus = paymentStatus;
     if (bookingStatus) booking.bookingStatus = bookingStatus;
+    if (isManuallyConfirmed !== undefined) booking.isManuallyConfirmed = isManuallyConfirmed;
+    if (crystals !== undefined) booking.crystals = crystals;
+    if (medicine !== undefined) booking.medicine = medicine;
 
     // When admin accepts the booking, mark payment as completed and generate the invoice
     if (bookingStatus === 'Accepted') {

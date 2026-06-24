@@ -137,6 +137,10 @@ const bookingSchema = mongoose.Schema(
     paymentRemarks: {
       type: String,
     },
+    // Internal Admin Notes & Manual Tracking
+    isManuallyConfirmed: { type: Boolean, default: false },
+    crystals: { type: String, default: "" },
+    medicine: { type: String, default: "" },
     // Notification tracking
     emailSentToClient: { type: Boolean, default: false },
     emailSentToAdmin: { type: Boolean, default: false },

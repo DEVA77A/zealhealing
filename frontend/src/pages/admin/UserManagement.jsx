@@ -1,13 +1,14 @@
 import { useState, useEffect } from 'react';
 import axios from 'axios';
 import { toast } from 'react-toastify';
-import { FaTrash, FaUserSlash, FaSearch } from 'react-icons/fa';
+import { FaTrash, FaUserSlash, FaSearch, FaCalendarCheck, FaTimesCircle } from 'react-icons/fa';
 import { useAuth } from '../../context/AuthContext';
 
 const UserManagement = () => {
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
+  const [sessionModal, setSessionModal] = useState(null);
   const { getToken } = useAuth();
 
   useEffect(() => {
@@ -37,6 +38,33 @@ const UserManagement = () => {
       } catch (error) {
         toast.error('Failed to delete user');
       }
+    }
+  };
+
+  const fetchUserSessions = async (user) => {
+    try {
+      const { data } = await axios.get(`http://localhost:5000/api/admin/bookings?userId=${user._id}`, {
+        headers: { Authorization: `Bearer ${getToken()}` }
+      });
+      setSessionModal({ user, bookings: data });
+    } catch (error) {
+      toast.error('Failed to fetch user sessions');
+    }
+  };
+
+  const updateSessionDetails = async (bookingId, details) => {
+    try {
+      const { data } = await axios.put(`http://localhost:5000/api/admin/bookings/${bookingId}`, 
+        details,
+        { headers: { Authorization: `Bearer ${getToken()}` } }
+      );
+      setSessionModal(prev => ({
+        ...prev,
+        bookings: prev.bookings.map(b => b._id === bookingId ? data : b)
+      }));
+      toast.success('Protocol updated');
+    } catch (error) {
+      toast.error('Update failed');
     }
   };
 
@@ -89,7 +117,11 @@ const UserManagement = () => {
               {filteredUsers.map((user) => (
                 <tr key={user._id} className="hover:bg-slate-50/10 transition-all group">
                   <td className="p-8">
-                    <p className="font-serif font-bold text-slate-900 text-lg group-hover:text-darkGreen transition-colors">{user.name}</p>
+                    <button onClick={() => fetchUserSessions(user)} className="text-left group focus:outline-none">
+                      <p className="font-serif font-bold text-slate-900 text-lg group-hover:text-darkGreen transition-colors underline decoration-gold/20 underline-offset-8">
+                        {user.name}
+                      </p>
+                    </button>
                     <p className="text-xs text-slate-400 font-medium mt-1">{user.email}</p>
                   </td>
                   <td className="p-8">
@@ -131,6 +163,86 @@ const UserManagement = () => {
           </table>
         </div>
       </div>
+
+      {/* Session Protocol Modal */}
+      {sessionModal && (
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-md z-[60] flex items-center justify-center p-4" onClick={() => setSessionModal(null)}>
+          <div className="bg-white shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-hidden flex flex-col animate-in fade-in zoom-in duration-300" onClick={(e) => e.stopPropagation()}>
+            <div className="p-10 border-b border-slate-50 flex justify-between items-center bg-white sticky top-0 z-10">
+              <div>
+                <h3 className="text-3xl font-serif font-bold text-slate-900">Session Protocols</h3>
+                <p className="text-xs text-gold font-black uppercase tracking-[0.2em] mt-1">{sessionModal.user.name}</p>
+              </div>
+              <button onClick={() => setSessionModal(null)} className="text-slate-300 hover:text-rose-500 transition-colors">
+                <FaTimesCircle size={28} />
+              </button>
+            </div>
+
+            <div className="flex-1 p-10 overflow-y-auto space-y-12 bg-slate-50/30">
+               {sessionModal.bookings.length === 0 ? (
+                 <div className="text-center py-20">
+                   <p className="text-slate-400 font-serif italic text-lg text-center">This soul has no registered sessions yet.</p>
+                 </div>
+               ) : (
+                 sessionModal.bookings.map((booking) => (
+                   <div key={booking._id} className="bg-white p-8 border border-slate-100 space-y-8">
+                      <div className="flex items-center justify-between border-b border-slate-50 pb-6">
+                        <div className="flex items-center gap-4">
+                          <div className="w-12 h-12 bg-slate-50 flex items-center justify-center text-darkGreen">
+                            <FaCalendarCheck size={20} />
+                          </div>
+                          <div>
+                            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Appointment Date</p>
+                            <p className="font-bold text-slate-900">{new Date(booking.appointmentDate).toLocaleDateString(undefined, { dateStyle: 'medium' })}</p>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-3 bg-slate-50 px-4 py-2">
+                          <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Confirmed</span>
+                          <input 
+                            type="checkbox" 
+                            defaultChecked={booking.isManuallyConfirmed}
+                            onChange={(e) => updateSessionDetails(booking._id, { isManuallyConfirmed: e.target.checked })}
+                            className="w-5 h-5 border-2 border-slate-200 text-darkGreen focus:ring-darkGreen cursor-pointer"
+                          />
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-1 gap-6">
+                        <div className="space-y-3">
+                          <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Crystals (Prescription)</label>
+                          <textarea 
+                            className="w-full p-5 bg-slate-50/50 border border-slate-100 focus:ring-0 focus:outline-none focus:border-gold transition-all text-sm font-medium min-h-[80px] resize-none"
+                            placeholder="Assign crystals..."
+                            defaultValue={booking.crystals}
+                            onBlur={(e) => updateSessionDetails(booking._id, { crystals: e.target.value })}
+                          />
+                        </div>
+                        <div className="space-y-3">
+                          <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Medicine & Essence</label>
+                          <textarea 
+                            className="w-full p-5 bg-slate-50/50 border border-slate-100 focus:ring-0 focus:outline-none focus:border-gold transition-all text-sm font-medium min-h-[80px] resize-none"
+                            placeholder="Spiritual remedies..."
+                            defaultValue={booking.medicine}
+                            onBlur={(e) => updateSessionDetails(booking._id, { medicine: e.target.value })}
+                          />
+                        </div>
+                      </div>
+                   </div>
+                 ))
+               )}
+            </div>
+
+            <div className="p-8 border-t border-slate-50 bg-white">
+              <button 
+                onClick={() => setSessionModal(null)}
+                className="w-full py-5 bg-darkGreen text-white font-black text-xs uppercase tracking-[0.2em] hover:bg-emerald-900 transition-all"
+              >
+                Close Repository
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
