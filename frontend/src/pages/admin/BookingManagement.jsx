@@ -120,34 +120,32 @@ const BookingManagement = () => {
   if (loading) return <div className="p-8 text-center text-sage-600 font-serif animate-pulse">Accessing Secure Records...</div>;
 
   return (
-    <div className="space-y-10 pb-12">
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-6">
-        <div>
-          <h2 className="text-4xl font-serif font-bold text-slate-900">Appointment Ledger</h2>
-          <p className="text-sage-600 font-medium mt-1">Detailed record of all spiritual sessions</p>
-        </div>
-        <div className="bg-white/80 backdrop-blur-md px-6 py-2.5 rounded-2xl text-xs font-black text-slate-500 border border-slate-200 shadow-sm uppercase tracking-widest">
+    <div className="space-y-6 pb-12">
+      <div className="flex justify-between items-center">
+        <h2 className="text-3xl font-serif font-bold text-sage-900">Booking Management</h2>
+        <div className="bg-darkGreen text-white px-4 py-2 rounded-lg text-xs font-semibold shadow-sm">
           {bookings.length} Total Records
         </div>
       </div>
 
-      <div className="flex flex-col md:flex-row gap-6 mb-10">
-        <div className="flex-1 relative group">
-          <FaSearch className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gold group-focus-within:scale-110 transition-transform" />
+      {/* Filters */}
+      <div className="flex flex-col md:flex-row gap-4 mb-6">
+        <div className="flex-1 relative">
+          <FaSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 text-sage-400" />
           <input 
             type="text" 
             placeholder="Search by client name or email..." 
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full pl-12 pr-6 py-4 bg-white border border-slate-200 rounded-[1.5rem] focus:outline-none focus:ring-4 focus:ring-gold/10 text-sm shadow-sm transition-all hover:border-gold/30"
+            className="w-full pl-10 pr-4 py-2 border border-sage-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-sage-500 text-sm"
           />
         </div>
-        <div className="w-full md:w-72 relative">
-          <FaFilter className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gold" />
+        <div className="w-full md:w-64 relative">
+          <FaFilter className="absolute left-3 top-1/2 transform -translate-y-1/2 text-sage-400" />
           <select 
             value={statusFilter}
             onChange={(e) => setStatusFilter(e.target.value)}
-            className="w-full pl-12 pr-10 py-4 bg-white border border-slate-200 rounded-[1.5rem] focus:outline-none focus:ring-4 focus:ring-gold/10 appearance-none text-sm font-bold text-slate-700 shadow-sm transition-all hover:border-gold/30 cursor-pointer"
+            className="w-full pl-10 pr-4 py-2 border border-sage-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-sage-500 appearance-none bg-white text-sm text-sage-700"
           >
             <option value="All">All Statuses</option>
             <option value="Queued">Queued (New)</option>
@@ -244,67 +242,61 @@ const BookingManagement = () => {
         </div>
       )}
 
-      <div className="bg-white rounded-[2.5rem] shadow-2xl shadow-slate-200/40 border border-slate-100 overflow-hidden">
+      <div className="bg-white rounded-xl shadow-sm border border-sage-100 overflow-hidden">
         <div className="overflow-x-auto">
           <table className="min-w-full text-left border-collapse">
             <thead>
-              <tr className="bg-slate-50/50 text-slate-400 text-[10px] uppercase tracking-[0.2em] font-black">
-                <th className="p-8 border-b border-slate-100 text-center">Slot</th>
-                <th className="p-8 border-b border-slate-100">Customer</th>
-                <th className="p-8 border-b border-slate-100">Journey Path</th>
-                <th className="p-8 border-b border-slate-100">Financials</th>
-                <th className="p-8 border-b border-slate-100 text-center">Status</th>
-                <th className="p-8 border-b border-slate-100 text-right">Actions</th>
+              <tr className="bg-sage-50 text-sage-700 text-sm uppercase tracking-wider">
+                <th className="p-4 font-semibold border-b border-sage-200">Slot</th>
+                <th className="p-4 font-semibold border-b border-sage-200">Customer</th>
+                <th className="p-4 font-semibold border-b border-sage-200">Session Type</th>
+                <th className="p-4 font-semibold border-b border-sage-200">Financials</th>
+                <th className="p-4 font-semibold border-b border-sage-200">Status</th>
+                <th className="p-4 font-semibold border-b border-sage-200 text-right">Actions</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-50 text-sm text-slate-800">
+            <tbody className="divide-y divide-sage-100 text-sm text-sage-800">
               {filteredBookings.map((booking) => (
-                <tr key={booking._id} className="hover:bg-slate-50/10 transition-all group">
-                  <td className="p-8 text-center">
-                    <div className="w-24 mx-auto">
-                       <p className="font-bold text-slate-900 text-lg">{new Date(booking.appointmentDate).toLocaleDateString('en-IN', { day: '2-digit', month: 'short' })}</p>
-                       <p className="text-[10px] text-gold font-black uppercase tracking-widest mt-1">{formatTime12h(booking.appointmentTime)}</p>
+                <tr key={booking._id} className="hover:bg-sage-50/50 transition-colors">
+                  <td className="p-4">
+                    <div className="flex flex-col">
+                       <span className="font-bold text-sage-900">{new Date(booking.appointmentDate).toLocaleDateString('en-IN', { day: '2-digit', month: 'short' })}</span>
+                       <span className="text-xs text-gold font-bold">{formatTime12h(booking.appointmentTime)}</span>
                     </div>
                   </td>
-                  <td className="p-8">
-                    <button onClick={() => setAdminModal(booking)} className="text-left group focus:outline-none">
-                      <p className="font-serif font-bold text-slate-900 text-lg group-hover:text-darkGreen transition-colors underline decoration-gold/20 underline-offset-8">
+                  <td className="p-4">
+                    <button onClick={() => setAdminModal(booking)} className="text-left group focus:outline-none block">
+                      <span className="font-semibold text-sage-900 group-hover:text-darkGreen transition-colors block leading-tight">
                         {booking.customerName}
-                      </p>
+                      </span>
+                      <div className="flex items-center gap-1.5 mt-0.5 text-sage-500">
+                         <FaWhatsapp size={10} className="text-green-500" />
+                         <span className="text-[11px]">{booking.customerWhatsApp || booking.customerPhone}</span>
+                      </div>
                     </button>
-                    <div className="flex items-center gap-2 mt-1.5 opacity-60">
-                       <FaWhatsapp className="text-emerald-500 text-xs" />
-                       <span className="text-[11px] font-bold">{booking.customerWhatsApp || booking.customerPhone}</span>
-                    </div>
                   </td>
-                  <td className="p-8">
-                    <p className="font-black text-slate-400 text-[10px] uppercase tracking-[0.15em] mb-1">{booking.callType}</p>
-                    <p className="text-xs font-bold text-slate-700">{booking.duration} MIN JOURNEY</p>
+                  <td className="p-4">
+                    <p className="text-[10px] font-bold text-sage-400 uppercase tracking-wider mb-0.5">{booking.callType}</p>
+                    <p className="text-xs font-semibold text-sage-700">{booking.duration} MIN</p>
                   </td>
-                  <td className="p-8">
-                    <p className="font-serif font-bold text-slate-900 text-lg mb-1">{booking.currencySymbol || '₹'}{(booking.convertedAmount || booking.price).toLocaleString()}</p>
-                    <div className="flex items-center gap-1.5 opacity-50 font-black text-[9px] uppercase tracking-tighter">
-                      <div className="w-1 h-1 rounded-full bg-slate-400" />
-                      {booking.paymentMethod === 'Manual' ? 'Bank Settlement' : 'Card Nexus'}
-                    </div>
+                  <td className="p-4 text-sage-900">
+                    <p className="font-bold">{booking.currencySymbol || '₹'}{(booking.convertedAmount || booking.price).toLocaleString()}</p>
+                    <p className="text-[10px] text-sage-400 font-medium">{booking.paymentMethod === 'Manual' ? 'Bank' : 'Card'}</p>
                   </td>
-                  <td className="p-8 text-center">
-                    <span className={`px-4 py-1.5 rounded-full text-[9px] tracking-[0.2em] font-black uppercase shadow-sm ${getStatusColor(booking.bookingStatus)}`}>
+                  <td className="p-4">
+                    <span className={`px-2 py-1 rounded-full text-[10px] font-bold uppercase ${getStatusColor(booking.bookingStatus)}`}>
                       {booking.bookingStatus}
                     </span>
                   </td>
-                  <td className="p-8 text-right space-x-3 whitespace-nowrap">
-                    {/* Proof modal button removed per user request */}
-
-
+                  <td className="p-4 text-right space-x-2 whitespace-nowrap">
                     {['Queued'].includes(booking.bookingStatus) && (
-                      <button onClick={() => updateStatus(booking._id, 'Accepted')} className="p-3 bg-emerald-50 text-emerald-600 rounded-2xl hover:bg-emerald-600 hover:text-white transition-all shadow-sm active:scale-90" title="Initiate Path">
+                      <button onClick={() => updateStatus(booking._id, 'Accepted')} className="p-2 bg-green-50 text-green-600 rounded-lg hover:bg-green-600 hover:text-white transition shadow-sm" title="Accept">
                         <FaCheck />
                       </button>
                     )}
 
                     {['Accepted'].includes(booking.bookingStatus) && (
-                      <button onClick={() => updateStatus(booking._id, 'Completed')} className="p-3 bg-darkGreen/10 text-darkGreen rounded-2xl hover:bg-darkGreen hover:text-white transition-all shadow-sm active:scale-90" title="Consummate Session">
+                      <button onClick={() => updateStatus(booking._id, 'Completed')} className="p-2 bg-darkGreen/10 text-darkGreen rounded-lg hover:bg-darkGreen hover:text-white transition shadow-sm" title="Complete">
                         <FaCheck />
                       </button>
                     )}
@@ -313,15 +305,15 @@ const BookingManagement = () => {
                       <div className="inline-flex gap-2">
                         <button 
                           onClick={() => downloadInvoice(booking._id, booking.bookingStatus, 'view')} 
-                          className="p-3 bg-gold/10 text-gold rounded-2xl hover:bg-gold hover:text-white transition-all shadow-sm active:scale-95" 
+                          className="p-2 bg-sage-100 text-sage-700 rounded-lg hover:bg-sage-200 transition shadow-sm" 
                           title="View Invoice"
                         >
                           <FaEye />
                         </button>
                         <button 
                           onClick={() => downloadInvoice(booking._id, booking.bookingStatus, 'download')} 
-                          className="p-3 bg-darkGreen/10 text-darkGreen rounded-2xl hover:bg-darkGreen hover:text-white transition-all shadow-sm active:scale-95" 
-                          title="Download Invoice"
+                          className="p-2 bg-blue-50 text-blue-600 rounded-lg hover:bg-blue-100 transition shadow-sm" 
+                          title="Download"
                         >
                           <FaDownload />
                         </button>
@@ -330,16 +322,18 @@ const BookingManagement = () => {
                   </td>
                 </tr>
               ))}
+              {filteredBookings.length === 0 && (
+                <tr>
+                  <td colSpan="6" className="p-12 text-center">
+                    <div className="flex flex-col items-center">
+                      <FaSearch className="text-sage-200 text-3xl mb-4" />
+                      <p className="text-sage-400 font-serif italic text-lg">No sessions match your search criteria.</p>
+                    </div>
+                  </td>
+                </tr>
+              )}
             </tbody>
           </table>
-          {filteredBookings.length === 0 && (
-            <div className="py-32 text-center flex flex-col items-center">
-               <div className="w-24 h-24 bg-slate-50 rounded-full flex items-center justify-center mb-8">
-                <FaSearch className="text-slate-200 text-3xl" />
-               </div>
-               <p className="text-slate-400 font-serif italic text-2xl">The ledger is silent for your query.</p>
-            </div>
-          )}
         </div>
       </div>
 
@@ -374,7 +368,7 @@ const BookingManagement = () => {
       {/* Session Management Modal (Admin Click User Name) */}
       {adminModal && (
         <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-md z-[60] flex items-center justify-center p-4" onClick={() => setAdminModal(null)}>
-          <div className="bg-white shadow-2xl w-full max-w-xl overflow-hidden animate-in fade-in zoom-in duration-300" onClick={(e) => e.stopPropagation()}>
+          <div className="bg-white shadow-2xl w-full max-w-xl rounded-[2rem] overflow-hidden animate-in fade-in zoom-in duration-300" onClick={(e) => e.stopPropagation()}>
             <div className="p-10">
                <div className="flex justify-between items-start mb-8">
                  <div>
@@ -388,23 +382,26 @@ const BookingManagement = () => {
 
                <div className="space-y-8">
                  {/* Appointment Sync */}
-                 <div className="bg-slate-50 p-6 border border-slate-100 flex items-center justify-between">
+                 <div className="bg-slate-50 p-6 border border-slate-100 flex items-center justify-between rounded-2xl">
                    <div className="flex items-center gap-4">
-                     <div className="w-12 h-12 bg-white flex items-center justify-center text-darkGreen shadow-sm">
+                     <div className="w-12 h-12 bg-white rounded-xl flex items-center justify-center text-darkGreen shadow-sm">
                        <FaCalendarCheck size={20} />
                      </div>
                      <div>
-                       <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Scheduled Path</p>
-                       <p className="font-bold text-slate-900">{new Date(adminModal.appointmentDate).toLocaleDateString(undefined, { dateStyle: 'medium' })}</p>
+                       <p className="text-[10px] font-black text-slate-900 uppercase tracking-widest">Scheduled Path & Time</p>
+                       <p className="font-bold text-slate-900">
+                        {new Date(adminModal.appointmentDate).toLocaleDateString(undefined, { dateStyle: 'medium' })}
+                        <span className="text-gold ml-2 font-black">@ {adminModal.appointmentTime}</span>
+                       </p>
                      </div>
                    </div>
                    <div className="flex items-center gap-3">
-                     <span className="text-xs font-bold text-slate-500 uppercase tracking-tighter">Confirm Execution</span>
+                     <span className="text-[10px] font-black text-slate-900 uppercase tracking-widest leading-none">Confirm Execution</span>
                      <input 
                        type="checkbox" 
                        defaultChecked={adminModal.isManuallyConfirmed}
                        onChange={(e) => updateAdminDetails(adminModal._id, { isManuallyConfirmed: e.target.checked })}
-                       className="w-6 h-6 border-2 border-slate-200 text-darkGreen focus:ring-darkGreen cursor-pointer"
+                       className="w-6 h-6 rounded border-2 border-slate-200 text-darkGreen focus:ring-darkGreen cursor-pointer"
                      />
                    </div>
                  </div>
@@ -412,20 +409,20 @@ const BookingManagement = () => {
                  {/* Treatment Boxes */}
                  <div className="grid grid-cols-1 gap-6">
                    <div className="space-y-3">
-                     <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Spiritual Artifacts (Crystals)</label>
+                     <label className="text-[10px] font-black text-slate-900 uppercase tracking-widest ml-1">Spiritual Artifacts (Crystals)</label>
                      <textarea 
                        id="crystals-box"
-                       className="w-full p-6 bg-slate-50 border border-slate-100 focus:ring-0 focus:outline-none focus:border-gold transition-all text-sm font-medium min-h-[100px] resize-none"
+                       className="w-full p-6 bg-slate-50 border border-slate-100 rounded-2xl focus:ring-0 focus:outline-none focus:border-gold transition-all text-sm font-medium min-h-[100px] resize-none"
                        placeholder="Assign crystals for this session..."
                        defaultValue={adminModal.crystals}
                        onBlur={(e) => updateAdminDetails(adminModal._id, { crystals: e.target.value })}
                      />
                    </div>
                    <div className="space-y-3">
-                     <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Essence & Remedies (Medicine)</label>
+                     <label className="text-[10px] font-black text-slate-900 uppercase tracking-widest ml-1">Essence & Remedies (Medicine)</label>
                      <textarea 
                        id="medicine-box"
-                       className="w-full p-6 bg-slate-50 border border-slate-100 focus:ring-0 focus:outline-none focus:border-gold transition-all text-sm font-medium min-h-[100px] resize-none"
+                       className="w-full p-6 bg-slate-50 border border-slate-100 rounded-2xl focus:ring-0 focus:outline-none focus:border-gold transition-all text-sm font-medium min-h-[100px] resize-none"
                        placeholder="Recommended spiritual remedies..."
                        defaultValue={adminModal.medicine}
                        onBlur={(e) => updateAdminDetails(adminModal._id, { medicine: e.target.value })}
@@ -437,7 +434,7 @@ const BookingManagement = () => {
                <div className="mt-10 flex gap-4">
                  <button 
                    onClick={() => setAdminModal(null)}
-                   className="flex-1 py-5 bg-darkGreen text-white font-black text-xs uppercase tracking-[0.2em] hover:bg-emerald-900 transition-all active:scale-95"
+                   className="flex-1 py-5 bg-darkGreen text-white font-black text-xs uppercase tracking-[0.2em] hover:bg-emerald-900 transition-all rounded-2xl active:scale-95 shadow-lg shadow-darkGreen/20"
                  >
                    Archive Protocol
                  </button>

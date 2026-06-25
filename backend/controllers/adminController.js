@@ -82,6 +82,30 @@ const getDashboardStats = async (req, res) => {
     });
     const classChart = Object.keys(classData).map(k => ({ name: k, sales: classData[k] }));
 
+    // Top performing classes ranked by booking count
+    // Group by appointmentType + callType + duration (no classId on Booking model)
+    const allBookingsRaw = await Booking.find({ paymentStatus: 'Completed' });
+    const classStatsMap = {};
+    allBookingsRaw.forEach(b => {
+      const key = `${b.appointmentType}||${b.callType}||${b.duration}`;
+      if (!classStatsMap[key]) {
+        classStatsMap[key] = {
+          title: b.appointmentType,
+          type: b.callType,
+          duration: b.duration,
+          price: b.baseINRAmount || b.price,
+          bookings: 0,
+          revenue: 0,
+        };
+      }
+      classStatsMap[key].bookings += 1;
+      classStatsMap[key].revenue += (b.totalAmount || b.convertedAmount || b.price || 0);
+    });
+    const topClasses = Object.values(classStatsMap)
+      .sort((a, b) => b.bookings - a.bookings)
+      .slice(0, 5)
+      .map((c, i) => ({ ...c, rank: i + 1 }));
+
     res.json({
       overview: {
         totalRevenue,
@@ -97,7 +121,8 @@ const getDashboardStats = async (req, res) => {
         revenueChart,
         countryChart,
         classChart,
-      }
+      },
+      topClasses,
     });
 
   } catch (error) {

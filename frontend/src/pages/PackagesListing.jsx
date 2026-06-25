@@ -19,7 +19,7 @@ const PackagesListing = () => {
       try {
         const { data } = await axios.get('http://localhost:5000/api/classes');
         const activePackages = data.filter(pkg => pkg.status === 'Active' && pkg.type === type);
-        setPackages(activePackages.sort((a, b) => a.duration - b.duration));
+        setPackages(activePackages.sort((a, b) => a.price - b.price));
         setLoading(false);
       } catch (error) {
         console.error('Error fetching classes:', error);

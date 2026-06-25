@@ -28,8 +28,8 @@ const AdminLayout = () => {
   };
 
   const navItems = [
-    { name: 'Calendar', path: '/admin/calendar', icon: <FaCalendarAlt /> },
     { name: 'Dashboard', path: '/admin', icon: <FaHome /> },
+    { name: 'Calendar', path: '/admin/calendar', icon: <FaCalendarAlt /> },
     { name: 'Classes', path: '/admin/classes', icon: <FaBoxOpen /> },
     { name: 'Bookings', path: '/admin/bookings', icon: <FaCalendarAlt /> },
     { name: 'Users', path: '/admin/users', icon: <FaUsers /> },
@@ -55,27 +55,31 @@ const AdminLayout = () => {
 
       {/* Sidebar */}
       <aside 
-        className={`fixed inset-y-0 left-0 w-72 bg-[#1a2f23] text-white z-50 transform transition-transform duration-500 ease-out md:relative md:translate-x-0 ${
+        className={`fixed inset-y-0 left-0 w-64 z-50 transform transition-transform duration-500 ease-out md:relative md:translate-x-0 ${
           sidebarOpen ? 'translate-x-0' : '-translate-x-full'
-        } flex flex-col shadow-2xl border-r border-[#2d4d3a]`}
+        } flex flex-col bg-white border-r border-sage-100 shadow-sm`}
       >
-        <div className="p-8 flex flex-col items-center border-b border-[#2d4d3a]/50">
-          <div className="relative group cursor-pointer" onClick={() => navigate('/')}>
-            <div className="absolute inset-0 bg-gold/20 rounded-full blur-xl group-hover:bg-gold/40 transition-all"></div>
-            <img 
-              src="/logo.png" 
-              alt="Zeal Healing Logo" 
-              className="h-20 w-20 object-contain relative z-10 bg-white rounded-full p-2 shadow-lg transform group-hover:scale-110 transition-transform duration-500" 
-            />
-          </div>
-          <h2 className="mt-4 text-xl font-serif font-bold tracking-[0.2em] text-gold drop-shadow-sm">ZEAL HEALING</h2>
-          <p className="text-[10px] text-sage-400/60 font-bold uppercase tracking-widest mt-1">Management Portal</p>
-          <button className="absolute top-6 right-6 md:hidden text-white" onClick={toggleSidebar}>
-            <FaTimes size={20} />
+        {/* Logo Header */}
+        <div className="relative p-6 flex flex-col items-center border-b border-sage-100">
+          <button className="absolute top-5 right-5 md:hidden text-sage-400 hover:text-sage-700" onClick={toggleSidebar}>
+            <FaTimes size={18} />
           </button>
+          <div className="relative cursor-pointer group" onClick={() => navigate('/')}>
+            <div className="absolute inset-0 bg-darkGreen/10 rounded-full blur-xl opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+            <div className="w-16 h-16 rounded-full bg-sage-50 border-2 border-sage-100 flex items-center justify-center shadow-sm group-hover:border-darkGreen/30 transition-all duration-500 relative z-10">
+              <img src="/logo.png" alt="Zeal Healing" className="h-12 w-12 object-contain rounded-full" />
+            </div>
+          </div>
+          <h2 className="mt-4 text-sm font-serif font-bold tracking-[0.2em] text-sage-900">ZEAL HEALING</h2>
+          <div className="flex items-center gap-2 mt-1.5">
+            <div className="w-1.5 h-1.5 rounded-full bg-darkGreen animate-pulse" />
+            <p className="text-[9px] text-sage-400 font-bold uppercase tracking-widest">Admin Portal</p>
+          </div>
         </div>
 
-        <nav className="flex-grow px-4 mt-8 space-y-1 overflow-y-auto custom-scrollbar">
+        {/* Navigation */}
+        <nav className="flex-grow px-3 mt-5 space-y-1 overflow-y-auto">
+          <p className="text-[9px] font-bold text-sage-400 uppercase tracking-widest px-3 mb-3">Main Menu</p>
           {navItems.map((item) => {
             const isActive = location.pathname === item.path || (item.path !== '/admin' && location.pathname.startsWith(item.path));
             return (
@@ -83,32 +87,44 @@ const AdminLayout = () => {
                 key={item.name} 
                 to={item.path}
                 onClick={() => setSidebarOpen(false)}
-                className={`group flex items-center space-x-4 px-6 py-3.5 rounded-xl transition-all duration-300 relative overflow-hidden ${
+                className={`group flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-200 relative ${
                   isActive 
-                    ? 'bg-gradient-to-r from-darkGreen to-[#2d4d3a] text-gold shadow-lg shadow-black/20' 
-                    : 'text-sage-300 hover:text-white hover:bg-white/5'
+                    ? 'bg-darkGreen text-white shadow-md shadow-darkGreen/20' 
+                    : 'text-sage-600 hover:text-darkGreen hover:bg-sage-50'
                 }`}
               >
-                {isActive && <motion.div layoutId="activeNav" className="absolute left-0 w-1 h-6 bg-gold rounded-full" />}
-                <span className={`text-lg transition-transform duration-300 ${isActive ? 'scale-110' : 'group-hover:scale-110 opacity-70 group-hover:opacity-100'}`}>
+                {/* Icon container */}
+                <div className={`w-8 h-8 rounded-lg flex items-center justify-center text-sm shrink-0 transition-all duration-200 ${
+                  isActive 
+                    ? 'bg-white/20 text-white' 
+                    : 'bg-sage-100 text-sage-500 group-hover:bg-darkGreen/10 group-hover:text-darkGreen'
+                }`}>
                   {item.icon}
-                </span>
-                <span className="font-semibold tracking-wide text-sm">{item.name}</span>
-                {!isActive && (
-                  <div className="absolute inset-0 bg-gradient-to-r from-gold/5 transition-opacity opacity-0 group-hover:opacity-100" />
+                </div>
+
+                {/* Label */}
+                <span className="font-semibold text-sm tracking-wide">{item.name}</span>
+
+                {/* Active right dot */}
+                {isActive && (
+                  <div className="ml-auto w-1.5 h-1.5 rounded-full bg-white/60 shrink-0" />
                 )}
               </Link>
             );
           })}
         </nav>
 
-        <div className="p-6 border-t border-[#2d4d3a]/50">
+        {/* Logout */}
+        <div className="p-4 mt-2">
+          <div className="h-px bg-sage-100 mb-4" />
           <button 
             onClick={handleLogout}
-            className="flex items-center space-x-4 w-full px-6 py-3.5 rounded-xl text-sage-400 hover:bg-red-500/10 hover:text-red-400 transition-all duration-300 group"
+            className="flex items-center gap-3 w-full px-3 py-2.5 rounded-xl text-sage-400 hover:text-red-500 hover:bg-red-50 transition-all duration-200 group"
           >
-            <FaSignOutAlt className="group-hover:rotate-12 transition-transform" />
-            <span className="font-semibold text-sm tracking-wide">Secure Logout</span>
+            <div className="w-8 h-8 rounded-lg bg-sage-100 flex items-center justify-center group-hover:bg-red-100 transition-colors">
+              <FaSignOutAlt size={13} className="group-hover:translate-x-0.5 transition-transform" />
+            </div>
+            <span className="font-semibold text-sm tracking-wide">Logout</span>
           </button>
         </div>
       </aside>

@@ -148,19 +148,21 @@ const ClassManagement = () => {
                       {cls.status}
                     </span>
                   </td>
-                  <td className="p-4 text-right space-x-2 whitespace-nowrap">
-                    <button onClick={() => toggleStatus(cls)} className="p-2 bg-sage-100 text-sage-700 rounded-lg hover:bg-sage-200 transition" title={cls.status === 'Active' ? 'Disable' : 'Enable'}>
-                      {cls.status === 'Active' ? <FaEyeSlash /> : <FaEye />}
-                    </button>
-                    <Link to={`/admin/classes/edit/${cls._id}`} className="inline-block p-2 bg-blue-50 text-blue-600 rounded-lg hover:bg-blue-100 transition" title="Edit">
-                      <FaEdit />
-                    </Link>
-                    <button onClick={() => duplicateClass(cls)} className="p-2 bg-purple-50 text-purple-600 rounded-lg hover:bg-purple-100 transition" title="Duplicate">
-                      <FaCopy />
-                    </button>
-                    <button onClick={() => deleteClass(cls._id)} className="p-2 bg-red-50 text-red-600 rounded-lg hover:bg-red-100 transition" title="Delete">
-                      <FaTrash />
-                    </button>
+                  <td className="p-4">
+                    <div className="flex items-center justify-end gap-2">
+                      <button onClick={() => toggleStatus(cls)} className="p-2 bg-sage-100 text-sage-700 rounded-lg hover:bg-sage-200 transition" title={cls.status === 'Active' ? 'Disable' : 'Enable'}>
+                        {cls.status === 'Active' ? <FaEyeSlash /> : <FaEye />}
+                      </button>
+                      <Link to={`/admin/classes/edit/${cls._id}`} className="p-2 bg-blue-50 text-blue-600 rounded-lg hover:bg-blue-100 transition flex items-center" title="Edit">
+                        <FaEdit />
+                      </Link>
+                      <button onClick={() => duplicateClass(cls)} className="p-2 bg-purple-50 text-purple-600 rounded-lg hover:bg-purple-100 transition" title="Duplicate">
+                        <FaCopy />
+                      </button>
+                      <button onClick={() => deleteClass(cls._id)} className="p-2 bg-red-50 text-red-600 rounded-lg hover:bg-red-100 transition" title="Delete">
+                        <FaTrash />
+                      </button>
+                    </div>
                   </td>
                 </tr>
               ))}

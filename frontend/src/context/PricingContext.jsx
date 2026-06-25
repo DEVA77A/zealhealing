@@ -80,10 +80,21 @@ export const PricingProvider = ({ children }) => {
   };
 
   const getPrice = (type, duration, fallbackPrice) => {
-    if (pricingData.prices && pricingData.prices[type] && pricingData.prices[type][duration]) {
+    // Check if the price exactly matches the standard base INR matrix.
+    // If so, use the server's mapped pricing logic (which includes mapped tiers).
+    const standardBaseINRPrices = {
+      voice: { 15: 1000, 30: 2000, 45: 3000, 60: 4000 },
+      video: { 15: 2000, 30: 4000, 45: 6000, 60: 8000 }
+    };
+    
+    const isStandardPackage = standardBaseINRPrices[type] && standardBaseINRPrices[type][duration] === fallbackPrice;
+
+    if (isStandardPackage && pricingData.prices && pricingData.prices[type] && pricingData.prices[type][duration]) {
       return pricingData.prices[type][duration];
     }
-    return fallbackPrice;
+    
+    // For custom classes or custom prices, apply dynamic local currency via live exchange rate
+    return Math.ceil(fallbackPrice * (pricingData.exchangeRate || 1));
   };
 
   return (
