@@ -14,7 +14,7 @@ const MyBookings = () => {
   useEffect(() => {
     const fetchMyBookings = async () => {
       try {
-        const { data } = await axios.get('http://localhost:5000/api/bookings/mybookings', {
+        const { data } = await axios.get('/api/bookings/mybookings', {
           headers: { Authorization: `Bearer ${getToken()}` }
         });
         setBookings(data);
@@ -33,7 +33,7 @@ const MyBookings = () => {
       return;
     }
     try {
-      const response = await axios.get(`http://localhost:5000/api/invoice/${id}`, {
+      const response = await axios.get(`/api/invoice/${id}`, {
         headers: { Authorization: `Bearer ${getToken()}` },
         responseType: 'blob',
       });

@@ -15,7 +15,7 @@ const UserManagement = () => {
   useEffect(() => {
     const fetchUsers = async () => {
       try {
-        const { data } = await axios.get('http://localhost:5000/api/admin/users', {
+        const { data } = await axios.get('/api/admin/users', {
           headers: { Authorization: `Bearer ${getToken()}` }
         });
         setUsers(data);
@@ -31,7 +31,7 @@ const UserManagement = () => {
   const deleteUser = async (id) => {
     if (window.confirm('Are you sure you want to delete this user? This cannot be undone.')) {
       try {
-        await axios.delete(`http://localhost:5000/api/admin/users/${id}`, {
+        await axios.delete(`/api/admin/users/${id}`, {
           headers: { Authorization: `Bearer ${getToken()}` }
         });
         setUsers(users.filter(u => u._id !== id));
@@ -44,7 +44,7 @@ const UserManagement = () => {
 
   const fetchUserSessions = async (user) => {
     try {
-      const { data } = await axios.get(`http://localhost:5000/api/admin/bookings?userId=${user._id}`, {
+      const { data } = await axios.get(`/api/admin/bookings?userId=${user._id}`, {
         headers: { Authorization: `Bearer ${getToken()}` }
       });
       setSessionModal({ user, bookings: data });
@@ -55,7 +55,7 @@ const UserManagement = () => {
 
   const openUserDetails = async (user) => {
     try {
-      const { data } = await axios.get(`http://localhost:5000/api/admin/bookings?userId=${user._id}`, {
+      const { data } = await axios.get(`/api/admin/bookings?userId=${user._id}`, {
         headers: { Authorization: `Bearer ${getToken()}` }
       });
       setUserDetailsModal({ user, bookings: data });
@@ -66,7 +66,7 @@ const UserManagement = () => {
 
   const updateSessionDetails = async (bookingId, details) => {
     try {
-      const { data } = await axios.put(`http://localhost:5000/api/admin/bookings/${bookingId}`, 
+      const { data } = await axios.put(`/api/admin/bookings/${bookingId}`, 
         details,
         { headers: { Authorization: `Bearer ${getToken()}` } }
       );

@@ -17,7 +17,7 @@ const BookingManagement = () => {
   useEffect(() => {
     const fetchBookings = async () => {
       try {
-        const { data } = await axios.get('http://localhost:5000/api/admin/bookings', {
+        const { data } = await axios.get('/api/admin/bookings', {
           headers: { Authorization: `Bearer ${getToken()}` }
         });
         const sorted = data.sort((a, b) => new Date(b.bookingDate) - new Date(a.bookingDate));
@@ -33,7 +33,7 @@ const BookingManagement = () => {
 
   const updateStatus = async (id, status) => {
     try {
-      const { data } = await axios.put(`http://localhost:5000/api/admin/bookings/${id}`, 
+      const { data } = await axios.put(`/api/admin/bookings/${id}`, 
         { bookingStatus: status },
         { headers: { Authorization: `Bearer ${getToken()}` } }
       );
@@ -51,7 +51,7 @@ const BookingManagement = () => {
 
   const updateAdminDetails = async (id, details) => {
     try {
-      const { data } = await axios.put(`http://localhost:5000/api/admin/bookings/${id}`, 
+      const { data } = await axios.put(`/api/admin/bookings/${id}`, 
         details,
         { headers: { Authorization: `Bearer ${getToken()}` } }
       );
@@ -69,7 +69,7 @@ const BookingManagement = () => {
       return;
     }
     try {
-      const response = await axios.get(`http://localhost:5000/api/invoice/${id}`, {
+      const response = await axios.get(`/api/invoice/${id}`, {
         headers: { Authorization: `Bearer ${getToken()}` },
         responseType: 'blob',
       });

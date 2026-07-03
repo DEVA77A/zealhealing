@@ -31,7 +31,7 @@ const BookingCalendar = () => {
   useEffect(() => {
     const fetchBookings = async () => {
       try {
-        const { data } = await axios.get('http://localhost:5000/api/admin/bookings', {
+        const { data } = await axios.get('/api/admin/bookings', {
           headers: { Authorization: `Bearer ${getToken()}` }
         });
         setBookings(data);

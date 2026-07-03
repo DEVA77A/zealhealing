@@ -12,7 +12,7 @@ const ForgotPassword = () => {
     e.preventDefault();
     setLoading(true);
     try {
-      const { data } = await axios.post('http://localhost:5000/api/auth/forgot-password', { email });
+      const { data } = await axios.post('/api/auth/forgot-password', { email });
       toast.success(data.message || 'Reset link sent to your email');
       // For development/demo purposes, alert the token so it can be copied easily
       if (data.resetToken) {

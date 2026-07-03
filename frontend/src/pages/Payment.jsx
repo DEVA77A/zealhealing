@@ -96,7 +96,7 @@ const Payment = () => {
         paymentRemarks,
       };
 
-      const { data } = await axios.post('http://localhost:5000/api/bookings/create', payload, config);
+      const { data } = await axios.post('/api/bookings/create', payload, config);
       
       localStorage.removeItem('pendingBooking');
       localStorage.removeItem('tempAppointment');
@@ -117,7 +117,7 @@ const Payment = () => {
         const token = userInfo ? userInfo.token : '';
         const config = { headers: { Authorization: `Bearer ${token}` } };
 
-        const { data: order } = await axios.post('http://localhost:5000/api/payment/create-order', { amount: totalAmount, currency: currency }, config);
+        const { data: order } = await axios.post('/api/payment/create-order', { amount: totalAmount, currency: currency }, config);
 
         const options = {
           key: 'your_razorpay_key_id',
@@ -128,7 +128,7 @@ const Payment = () => {
           order_id: order.id,
           handler: async function (response) {
             try {
-              await axios.post('http://localhost:5000/api/payment/verify', response, config);
+              await axios.post('/api/payment/verify', response, config);
               
               const payload = {
                 appointmentType: bookingData.package.title,
@@ -147,7 +147,7 @@ const Payment = () => {
                 razorpayOrderId: order.id
               };
 
-              const { data: bookingResult } = await axios.post('http://localhost:5000/api/bookings/create', payload, config);
+              const { data: bookingResult } = await axios.post('/api/bookings/create', payload, config);
               localStorage.removeItem('pendingBooking');
               localStorage.removeItem('tempAppointment');
               navigate(`/success/${bookingResult._id}`);

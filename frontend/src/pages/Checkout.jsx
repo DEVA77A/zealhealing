@@ -51,7 +51,7 @@ const Checkout = () => {
 
     const fetchClassDetails = async () => {
       try {
-        const { data } = await axios.get(`http://localhost:5000/api/classes/${id}`);
+        const { data } = await axios.get(`/api/classes/${id}`);
         setSelectedPkg(data);
         setLoading(false);
       } catch (error) {

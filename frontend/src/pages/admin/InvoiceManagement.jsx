@@ -14,7 +14,7 @@ const InvoiceManagement = () => {
   useEffect(() => {
     const fetchInvoices = async () => {
       try {
-        const { data } = await axios.get('http://localhost:5000/api/admin/invoices', {
+        const { data } = await axios.get('/api/admin/invoices', {
           headers: { Authorization: `Bearer ${getToken()}` }
         });
         const sorted = data.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
@@ -30,7 +30,7 @@ const InvoiceManagement = () => {
 
   const downloadInvoice = async (bookingId, invoiceNumber, mode = 'download') => {
     try {
-      const res = await axios.get(`http://localhost:5000/api/invoice/${bookingId}`, {
+      const res = await axios.get(`/api/invoice/${bookingId}`, {
         headers: { Authorization: `Bearer ${getToken()}` },
         responseType: 'blob'
       });

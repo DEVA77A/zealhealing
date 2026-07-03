@@ -17,7 +17,7 @@ const PackagesListing = () => {
   useEffect(() => {
     const fetchClasses = async () => {
       try {
-        const { data } = await axios.get('http://localhost:5000/api/classes');
+        const { data } = await axios.get('/api/classes');
         const activePackages = data.filter(pkg => pkg.status === 'Active' && pkg.type === type);
         setPackages(activePackages.sort((a, b) => a.price - b.price));
         setLoading(false);

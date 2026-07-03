@@ -14,7 +14,7 @@ const ClassManagement = () => {
 
   const fetchClasses = async () => {
     try {
-      const { data } = await axios.get('http://localhost:5000/api/classes');
+      const { data } = await axios.get('/api/classes');
       setClasses(data);
       setLoading(false);
     } catch (error) {
@@ -30,7 +30,7 @@ const ClassManagement = () => {
   const deleteClass = async (id) => {
     if (window.confirm('Are you sure you want to delete this class?')) {
       try {
-        await axios.delete(`http://localhost:5000/api/classes/${id}`, {
+        await axios.delete(`/api/classes/${id}`, {
           headers: { Authorization: `Bearer ${getToken()}` }
         });
         toast.success('Class deleted');
@@ -44,7 +44,7 @@ const ClassManagement = () => {
   const toggleStatus = async (cls) => {
     try {
       const newStatus = cls.status === 'Active' ? 'Disabled' : 'Active';
-      await axios.put(`http://localhost:5000/api/classes/${cls._id}`, 
+      await axios.put(`/api/classes/${cls._id}`, 
         { status: newStatus },
         { headers: { Authorization: `Bearer ${getToken()}` } }
       );
@@ -61,7 +61,7 @@ const ClassManagement = () => {
       delete newClass._id;
       newClass.title = `${newClass.title} (Copy)`;
       
-      await axios.post(`http://localhost:5000/api/classes`, newClass, {
+      await axios.post(`/api/classes`, newClass, {
         headers: { Authorization: `Bearer ${getToken()}` }
       });
       toast.success('Class duplicated');

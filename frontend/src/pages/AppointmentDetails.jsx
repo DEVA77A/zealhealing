@@ -25,7 +25,7 @@ const AppointmentDetails = () => {
   useEffect(() => {
     const fetchClassDetails = async () => {
       try {
-        const { data: allPackages } = await axios.get('http://localhost:5000/api/classes');
+        const { data: allPackages } = await axios.get('/api/classes');
         const pkg = allPackages.find(p => p._id === id);
         if (pkg) {
           setSelectedPkg(pkg);
@@ -53,7 +53,7 @@ const AppointmentDetails = () => {
     setSelectedTime(null);
     try {
       const dateStr = date.toISOString().split('T')[0];
-      const { data } = await axios.get(`http://localhost:5000/api/bookings/slots?date=${dateStr}&duration=${selectedPkg.duration}`);
+      const { data } = await axios.get(`/api/bookings/slots?date=${dateStr}&duration=${selectedPkg.duration}`);
       setAvailableSlots(data.slots);
     } catch (error) {
       toast.error('Failed to fetch available slots');

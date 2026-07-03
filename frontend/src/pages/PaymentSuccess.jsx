@@ -14,7 +14,7 @@ const PaymentSuccess = () => {
       try {
         const userInfo = JSON.parse(localStorage.getItem('userInfo'));
         const token = userInfo ? userInfo.token : '';
-        const { data } = await axios.get(`http://localhost:5000/api/bookings/${id}`, {
+        const { data } = await axios.get(`/api/bookings/${id}`, {
           headers: { Authorization: `Bearer ${token}` }
         });
         setBooking(data);
@@ -36,7 +36,7 @@ const PaymentSuccess = () => {
       toast.info('Invoice will be available once your booking is confirmed by the admin.');
       return;
     }
-    window.open(`http://localhost:5000/api/invoice/${id}`, '_blank');
+    window.open(`/api/invoice/${id}`, '_blank');
   };
 
   return (

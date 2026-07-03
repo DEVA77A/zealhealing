@@ -27,7 +27,7 @@ const AddEditClass = () => {
     if (isEdit) {
       const fetchClass = async () => {
         try {
-          const { data } = await axios.get(`http://localhost:5000/api/classes/${id}`);
+          const { data } = await axios.get(`/api/classes/${id}`);
           setFormData(data);
           setLoading(false);
         } catch (error) {
@@ -51,10 +51,10 @@ const AddEditClass = () => {
       };
 
       if (isEdit) {
-        await axios.put(`http://localhost:5000/api/classes/${id}`, formData, config);
+        await axios.put(`/api/classes/${id}`, formData, config);
         toast.success('Class updated successfully');
       } else {
-        await axios.post('http://localhost:5000/api/classes', formData, config);
+        await axios.post('/api/classes', formData, config);
         toast.success('Class added successfully');
       }
       navigate('/admin/classes');

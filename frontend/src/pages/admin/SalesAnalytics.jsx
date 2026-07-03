@@ -14,7 +14,7 @@ const SalesAnalytics = () => {
   useEffect(() => {
     const fetchStats = async () => {
       try {
-        const { data } = await axios.get(`http://localhost:5000/api/admin/stats?range=${timeRange}`, {
+        const { data } = await axios.get(`/api/admin/stats?range=${timeRange}`, {
           headers: { Authorization: `Bearer ${getToken()}` }
         });
         setStats(data);

@@ -19,7 +19,7 @@ const AdminDashboard = () => {
           return;
         }
 
-        const { data } = await axios.get('http://localhost:5000/api/admin/bookings', {
+        const { data } = await axios.get('/api/admin/bookings', {
           headers: { Authorization: `Bearer ${userInfo.token}` }
         });
         setBookings(data);
@@ -35,7 +35,7 @@ const AdminDashboard = () => {
   const updateStatus = async (id, status) => {
     try {
       const userInfo = JSON.parse(localStorage.getItem('userInfo'));
-      await axios.put(`http://localhost:5000/api/admin/bookings/${id}`, 
+      await axios.put(`/api/admin/bookings/${id}`, 
         { bookingStatus: status, paymentStatus: status === 'Completed' ? 'Completed' : undefined },
         { headers: { Authorization: `Bearer ${userInfo.token}` } }
       );
@@ -50,7 +50,7 @@ const AdminDashboard = () => {
     if (window.confirm('Are you sure you want to delete this booking?')) {
       try {
         const userInfo = JSON.parse(localStorage.getItem('userInfo'));
-        await axios.delete(`http://localhost:5000/api/admin/bookings/${id}`, {
+        await axios.delete(`/api/admin/bookings/${id}`, {
           headers: { Authorization: `Bearer ${userInfo.token}` }
         });
         setBookings(bookings.filter(b => b._id !== id));
@@ -62,7 +62,7 @@ const AdminDashboard = () => {
   };
 
   const downloadInvoice = (id) => {
-    window.open(`http://localhost:5000/api/invoice/${id}`, '_blank');
+    window.open(`/api/invoice/${id}`, '_blank');
   };
 
   // Stats

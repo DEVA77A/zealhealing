@@ -18,7 +18,7 @@ const UserProfile = () => {
             Authorization: `Bearer ${getToken()}`,
           },
         };
-        const { data } = await axios.get('http://localhost:5000/api/bookings/mybookings', config);
+        const { data } = await axios.get('/api/bookings/mybookings', config);
         setBookings(data);
       } catch (error) {
         toast.error(error.response?.data?.message || 'Failed to fetch bookings');
@@ -34,7 +34,7 @@ const UserProfile = () => {
 
   const handleDownloadInvoice = async (bookingId, invoiceNumber) => {
     try {
-      const res = await axios.get(`http://localhost:5000/api/invoice/${bookingId}`, {
+      const res = await axios.get(`/api/invoice/${bookingId}`, {
         headers: { Authorization: `Bearer ${getToken()}` },
         responseType: 'blob'
       });

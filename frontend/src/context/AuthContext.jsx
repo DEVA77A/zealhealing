@@ -20,7 +20,7 @@ export const AuthProvider = ({ children }) => {
   }, []);
 
   const login = async (email, password) => {
-    const { data } = await axios.post('http://localhost:5000/api/auth/login', { email, password });
+    const { data } = await axios.post('/api/auth/login', { email, password });
     
     // Auto-detect and set pricing context based on login location
     if (data.location) {
@@ -33,7 +33,7 @@ export const AuthProvider = ({ children }) => {
   };
 
   const register = async (name, email, phone, password) => {
-    const { data } = await axios.post('http://localhost:5000/api/auth/register', { name, email, phone, password });
+    const { data } = await axios.post('/api/auth/register', { name, email, phone, password });
     setUser(data);
     localStorage.setItem('userInfo', JSON.stringify(data));
     return data;
