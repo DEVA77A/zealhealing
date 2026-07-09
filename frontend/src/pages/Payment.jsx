@@ -117,18 +117,25 @@ const Payment = () => {
         const token = userInfo ? userInfo.token : '';
         const config = { headers: { Authorization: `Bearer ${token}` } };
 
-        const { data: order } = await axios.post('/api/payment/create-order', { amount: totalAmount, currency: currency }, config);
+        // Convert amount to paise as required by backend
+        const amountInPaise = Math.round(parseFloat(totalAmount) * 100);
+
+        const { data: order } = await axios.post('/api/payment/create-order', { amount: amountInPaise, currency: currency }, config);
 
         const options = {
-          key: 'your_razorpay_key_id',
+          key: import.meta.env.VITE_RAZORPAY_KEY_ID,
           amount: order.amount,
           currency: order.currency,
           name: 'Zeal Healing',
           description: bookingData.package.title,
-          order_id: order.id,
+          order_id: order.order_id,
           handler: async function (response) {
             try {
-              await axios.post('/api/payment/verify', response, config);
+              await axios.post('/api/payment/verify', {
+                  razorpay_order_id: response.razorpay_order_id,
+                  razorpay_payment_id: response.razorpay_payment_id,
+                  razorpay_signature: response.razorpay_signature,
+              }, config);
               
               const payload = {
                 appointmentType: bookingData.package.title,
@@ -144,7 +151,7 @@ const Payment = () => {
                 ...bookingData.customerDetails,
                 paymentMethod: 'Razorpay',
                 paymentStatus: 'Completed',
-                razorpayOrderId: order.id
+                razorpayOrderId: order.order_id
               };
 
               const { data: bookingResult } = await axios.post('/api/bookings/create', payload, config);
@@ -161,9 +168,17 @@ const Payment = () => {
             contact: bookingData.customerDetails.customerPhone,
           },
           theme: { color: '#2E7D32' },
+          modal: {
+            ondismiss: function() {
+              toast.info('Payment cancelled by user');
+            }
+          }
         };
 
         const rzp = new window.Razorpay(options);
+        rzp.on('payment.failed', function (response){
+             toast.error(response.error.description || 'Payment Failed');
+        });
         rzp.open();
       } catch (err) {
         toast.error('Could not create Razorpay order');
