@@ -1,165 +1,295 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Link, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
-  FaHome, 
-  FaBoxOpen, 
-  FaCalendarAlt, 
-  FaUsers, 
-  FaFileInvoiceDollar, 
-  FaChartLine, 
-  FaSignOutAlt,
-  FaBars,
-  FaTimes
-} from 'react-icons/fa';
+  FiGrid, 
+  FiCalendar, 
+  FiBookOpen, 
+  FiBookmark, 
+  FiUsers, 
+  FiFileText, 
+  FiBarChart2, 
+  FiLogOut,
+  FiX,
+  FiMenu
+} from 'react-icons/fi';
 
 const AdminLayout = () => {
-  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [isDesktop, setIsDesktop] = useState(() => typeof window !== 'undefined' && window.innerWidth >= 768);
+  const [sidebarOpen, setSidebarOpen] = useState(() => typeof window !== 'undefined' && window.innerWidth >= 768);
   const location = useLocation();
   const navigate = useNavigate();
   const { logout } = useAuth();
 
-  const toggleSidebar = () => setSidebarOpen(!sidebarOpen);
+  useEffect(() => {
+    const handleResize = () => {
+      const desktop = window.innerWidth >= 768;
+      setIsDesktop(desktop);
+    };
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
+  const toggleSidebar = () => setSidebarOpen(prev => !prev);
   
   const handleLogout = () => {
     logout();
     navigate('/login');
   };
 
+  const handleNavClick = () => {
+    if (!isDesktop) {
+      setSidebarOpen(false);
+    }
+  };
+
   const navItems = [
-    { name: 'Dashboard', path: '/admin', icon: <FaHome /> },
-    { name: 'Calendar', path: '/admin/calendar', icon: <FaCalendarAlt /> },
-    { name: 'Classes', path: '/admin/classes', icon: <FaBoxOpen /> },
-    { name: 'Bookings', path: '/admin/bookings', icon: <FaCalendarAlt /> },
-    { name: 'Users', path: '/admin/users', icon: <FaUsers /> },
-    { name: 'Invoices', path: '/admin/invoices', icon: <FaFileInvoiceDollar /> },
-    { name: 'Analytics', path: '/admin/analytics', icon: <FaChartLine /> },
+    { name: 'Dashboard', path: '/admin', icon: FiGrid },
+    { name: 'Calendar', path: '/admin/calendar', icon: FiCalendar },
+    { name: 'Classes', path: '/admin/classes', icon: FiBookOpen },
+    { name: 'Bookings', path: '/admin/bookings', icon: FiBookmark },
+    { name: 'Users', path: '/admin/users', icon: FiUsers },
+    { name: 'Invoices', path: '/admin/invoices', icon: FiFileText },
+    { name: 'Analytics', path: '/admin/analytics', icon: FiBarChart2 },
   ];
 
   return (
-    <div className="flex h-screen bg-[#f8fafc] overflow-hidden font-sans">
+    <div style={{ display: 'flex', height: '100vh', background: 'var(--clr-parchment)', overflow: 'hidden', fontFamily: 'var(--font-body)', position: 'relative' }}>
       
       {/* Mobile Sidebar Overlay */}
       <AnimatePresence>
-        {sidebarOpen && (
+        {!isDesktop && sidebarOpen && (
           <motion.div 
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-40 md:hidden"
-            onClick={toggleSidebar}
+            style={{
+              position: 'fixed',
+              inset: 0,
+              background: 'rgba(13,26,14,0.4)',
+              backdropFilter: 'blur(4px)',
+              zIndex: 45,
+            }}
+            onClick={() => setSidebarOpen(false)}
           />
         )}
       </AnimatePresence>
 
       {/* Sidebar */}
       <aside 
-        className={`fixed inset-y-0 left-0 w-64 z-50 transform transition-transform duration-500 ease-out md:relative md:translate-x-0 ${
-          sidebarOpen ? 'translate-x-0' : '-translate-x-full'
-        } flex flex-col bg-white border-r border-sage-100 shadow-sm`}
+        style={{
+          position: 'fixed',
+          top: 0,
+          bottom: 0,
+          left: 0,
+          width: '260px',
+          height: '100vh',
+          zIndex: 50,
+          display: 'flex',
+          flexDirection: 'column',
+          background: '#fff',
+          borderRight: '1px solid var(--clr-border)',
+          boxShadow: 'var(--shadow-sm)',
+          transition: 'transform 300ms cubic-bezier(0.16, 1, 0.3, 1)',
+          transform: sidebarOpen ? 'translateX(0)' : 'translateX(-100%)',
+        }}
       >
         {/* Logo Header */}
-        <div className="relative p-6 flex flex-col items-center border-b border-sage-100">
-          <button className="absolute top-5 right-5 md:hidden text-sage-400 hover:text-sage-700" onClick={toggleSidebar}>
-            <FaTimes size={18} />
+        <div style={{
+          position: 'relative',
+          padding: '32px 24px',
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          borderBottom: '1px solid var(--clr-border)',
+        }}>
+          <button 
+            style={{ position: 'absolute', top: '16px', right: '16px', background: 'none', border: 'none', cursor: 'pointer', color: 'var(--clr-warm-gray)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '4px' }} 
+            onClick={() => setSidebarOpen(false)}
+            title="Close Sidebar"
+          >
+            <FiX size={20} />
           </button>
-          <div className="relative cursor-pointer group" onClick={() => navigate('/')}>
-            <div className="absolute inset-0 bg-darkGreen/10 rounded-full blur-xl opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-            <div className="w-16 h-16 rounded-full bg-sage-50 border-2 border-sage-100 flex items-center justify-center shadow-sm group-hover:border-darkGreen/30 transition-all duration-500 relative z-10">
-              <img src="/logo.png" alt="Zeal Healing" className="h-12 w-12 object-contain rounded-full" />
+          
+          <div style={{ cursor: 'pointer', position: 'relative' }} onClick={() => navigate('/')}>
+            <div style={{
+              width: 60, height: 60,
+              borderRadius: '50%',
+              background: 'var(--clr-forest-50)',
+              border: '1.5px solid var(--clr-border)',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              overflow: 'hidden',
+              padding: '6px',
+            }}>
+              <img src="/logo.png" alt="Zeal Healing" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
             </div>
           </div>
-          <h2 className="mt-4 text-sm font-serif font-bold tracking-[0.2em] text-sage-900">ZEAL HEALING</h2>
-          <div className="flex items-center gap-2 mt-1.5">
-            <div className="w-1.5 h-1.5 rounded-full bg-darkGreen animate-pulse" />
-            <p className="text-[9px] text-sage-400 font-bold uppercase tracking-widest">Admin Portal</p>
+          <h2 style={{ fontFamily: 'var(--font-display)', fontSize: '1.125rem', fontWeight: 500, color: 'var(--clr-ink)', letterSpacing: '0.12em', marginTop: '16px', textTransform: 'uppercase' }}>
+            Zeal Healing
+          </h2>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginTop: '6px' }}>
+            <div style={{ width: 6, height: 6, borderRadius: '50%', background: 'var(--clr-forest-700)' }} />
+            <p style={{ fontSize: '0.5625rem', fontWeight: 700, letterSpacing: '0.15em', textTransform: 'uppercase', color: 'var(--clr-warm-gray)' }}>
+              Administration
+            </p>
           </div>
         </div>
 
-        {/* Navigation */}
-        <nav className="flex-grow px-3 mt-5 space-y-1 overflow-y-auto">
-          <p className="text-[9px] font-bold text-sage-400 uppercase tracking-widest px-3 mb-3">Main Menu</p>
+        {/* Navigation links */}
+        <nav style={{ flexGrow: 1, padding: '24px 16px', display: 'flex', flexDirection: 'column', gap: '4px', overflowY: 'auto' }}>
+          <p style={{ fontSize: '0.5625rem', fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase', color: 'var(--clr-warm-gray)', paddingLeft: '12px', marginBottom: '12px' }}>
+            Main Menu
+          </p>
           {navItems.map((item) => {
+            const Icon = item.icon;
             const isActive = location.pathname === item.path || (item.path !== '/admin' && location.pathname.startsWith(item.path));
             return (
               <Link 
                 key={item.name} 
                 to={item.path}
-                onClick={() => setSidebarOpen(false)}
-                className={`group flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-200 relative ${
-                  isActive 
-                    ? 'bg-darkGreen text-white shadow-md shadow-darkGreen/20' 
-                    : 'text-sage-600 hover:text-darkGreen hover:bg-sage-50'
-                }`}
+                onClick={handleNavClick}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '12px',
+                  padding: '10px 14px',
+                  borderRadius: 'var(--r-md)',
+                  background: isActive ? 'var(--clr-forest-700)' : 'transparent',
+                  color: isActive ? '#fff' : 'var(--clr-ink-muted)',
+                  textDecoration: 'none',
+                  fontSize: '0.875rem',
+                  fontWeight: 600,
+                  transition: 'all 200ms ease',
+                }}
+                onMouseEnter={e => {
+                  if (!isActive) {
+                    e.currentTarget.style.background = 'var(--clr-forest-50)';
+                    e.currentTarget.style.color = 'var(--clr-forest-750)';
+                  }
+                }}
+                onMouseLeave={e => {
+                  if (!isActive) {
+                    e.currentTarget.style.background = 'transparent';
+                    e.currentTarget.style.color = 'var(--clr-ink-muted)';
+                  }
+                }}
               >
-                {/* Icon container */}
-                <div className={`w-8 h-8 rounded-lg flex items-center justify-center text-sm shrink-0 transition-all duration-200 ${
-                  isActive 
-                    ? 'bg-white/20 text-white' 
-                    : 'bg-sage-100 text-sage-500 group-hover:bg-darkGreen/10 group-hover:text-darkGreen'
-                }`}>
-                  {item.icon}
+                {/* Icon box */}
+                <div style={{
+                  width: 28, height: 28,
+                  borderRadius: '6px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  background: isActive ? 'rgba(255,255,255,0.15)' : 'var(--clr-forest-50)',
+                  color: isActive ? '#fff' : 'var(--clr-forest-750)',
+                }}>
+                  <Icon size={16} />
                 </div>
 
-                {/* Label */}
-                <span className="font-semibold text-sm tracking-wide">{item.name}</span>
+                <span>{item.name}</span>
 
-                {/* Active right dot */}
                 {isActive && (
-                  <div className="ml-auto w-1.5 h-1.5 rounded-full bg-white/60 shrink-0" />
+                  <div style={{ marginLeft: 'auto', width: 6, height: 6, borderRadius: '50%', background: 'rgba(255,255,255,0.6)' }} />
                 )}
               </Link>
             );
           })}
         </nav>
 
-        {/* Logout */}
-        <div className="p-4 mt-2">
-          <div className="h-px bg-sage-100 mb-4" />
+        {/* Logout bottom */}
+        <div style={{ padding: '20px 16px', borderTop: '1px solid var(--clr-border)' }}>
           <button 
             onClick={handleLogout}
-            className="flex items-center gap-3 w-full px-3 py-2.5 rounded-xl text-sage-400 hover:text-red-500 hover:bg-red-50 transition-all duration-200 group"
+            style={{
+              width: '100%',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '12px',
+              padding: '10px 14px',
+              borderRadius: 'var(--r-md)',
+              border: 'none',
+              background: 'transparent',
+              color: 'var(--clr-warm-gray)',
+              fontSize: '0.875rem',
+              fontWeight: 600,
+              cursor: 'pointer',
+              transition: 'all 200ms ease',
+            }}
+            onMouseEnter={e => {
+              e.currentTarget.style.background = '#fef2f2';
+              e.currentTarget.style.color = '#ef4444';
+            }}
+            onMouseLeave={e => {
+              e.currentTarget.style.background = 'transparent';
+              e.currentTarget.style.color = 'var(--clr-warm-gray)';
+            }}
           >
-            <div className="w-8 h-8 rounded-lg bg-sage-100 flex items-center justify-center group-hover:bg-red-100 transition-colors">
-              <FaSignOutAlt size={13} className="group-hover:translate-x-0.5 transition-transform" />
+            <div style={{ width: 28, height: 28, borderRadius: '6px', background: 'rgba(0,0,0,0.03)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <FiLogOut size={16} />
             </div>
-            <span className="font-semibold text-sm tracking-wide">Logout</span>
+            <span>Logout Portal</span>
           </button>
         </div>
       </aside>
 
       {/* Main Content Area */}
-      <div className="flex-1 flex flex-col w-full h-full relative">
+      <div 
+        style={{ 
+          flexGrow: 1, 
+          display: 'flex', 
+          flexDirection: 'column', 
+          overflow: 'hidden',
+          marginLeft: (isDesktop && sidebarOpen) ? '260px' : 0,
+          transition: 'margin-left 300ms cubic-bezier(0.16, 1, 0.3, 1)',
+          width: '100%',
+        }}
+      >
         {/* Top Header */}
-        <header className="bg-white/80 backdrop-blur-md border-b border-slate-200 z-30 px-8 py-5 flex items-center justify-between sticky top-0">
+        <header style={{
+          background: '#fff',
+          borderBottom: '1px solid var(--clr-border)',
+          zIndex: 30,
+          padding: '20px 40px',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+        }}>
           <button 
-            className="md:hidden text-slate-600 hover:text-darkGreen transition-colors"
+            style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--clr-ink)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '4px' }}
             onClick={toggleSidebar}
+            title={sidebarOpen ? "Collapse Sidebar" : "Expand Sidebar"}
           >
-            <FaBars size={24} />
+            <FiMenu size={22} />
           </button>
           
-          <div className="hidden md:flex items-center space-x-2 text-slate-400 text-xs font-bold uppercase tracking-widest">
-            <Link to="/admin" className="hover:text-darkGreen transition-colors">Portal</Link>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.625rem', fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase', color: 'var(--clr-warm-gray)' }}>
+            <Link to="/admin" style={{ textDecoration: 'none', color: 'inherit' }}>Portal</Link>
             <span>/</span>
-            <span className="text-darkGreen">{navItems.find(n => location.pathname === n.path || (n.path !== '/admin' && location.pathname.startsWith(n.path)))?.name || 'Overview'}</span>
+            <span style={{ color: 'var(--clr-forest-700)' }}>
+              {navItems.find(n => location.pathname === n.path || (n.path !== '/admin' && location.pathname.startsWith(n.path)))?.name || 'Overview'}
+            </span>
           </div>
           
-          <div className="flex items-center space-x-6">
-            <div className="relative group">
-              <div className="absolute -inset-0.5 bg-gradient-to-r from-gold to-darkGreen rounded-full opacity-60 group-hover:opacity-100 transition duration-500"></div>
-              <div className="relative bg-white w-10 h-10 rounded-full flex items-center justify-center text-darkGreen font-bold border-2 border-white cursor-pointer overflow-hidden shadow-sm">
-                <span className="relative z-10">A</span>
-                <div className="absolute inset-0 bg-sage-50 opacity-0 group-hover:opacity-100 transition-opacity"></div>
-              </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+            <div style={{
+              width: 36, height: 36,
+              borderRadius: '50%',
+              background: 'var(--clr-forest-700)',
+              color: '#fff',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              fontSize: '0.8125rem', fontWeight: 700,
+              fontFamily: 'var(--font-mono)',
+            }}>
+              A
             </div>
           </div>
         </header>
 
         {/* Page Content */}
-        <main className="flex-1 overflow-y-auto p-6 md:p-10 bg-[#f8fafc]">
-          <div className="max-w-7xl mx-auto">
+        <main style={{ flexGrow: 1, overflowY: 'auto', padding: '40px', background: 'var(--clr-parchment)' }}>
+          <div style={{ maxWidth: '1280px', margin: '0 auto' }}>
             <Outlet />
           </div>
         </main>

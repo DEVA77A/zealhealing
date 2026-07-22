@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { FaCopy, FaCheckCircle, FaCloudUploadAlt, FaCalendarAlt, FaClock } from 'react-icons/fa';
 import axios from 'axios';
 import { toast } from 'react-toastify';
 
@@ -40,6 +39,7 @@ const Payment = () => {
   const handleCopy = (text, field) => {
     navigator.clipboard.writeText(text);
     setCopiedField(field);
+    toast.success('Copied to clipboard!');
     setTimeout(() => setCopiedField(null), 2000);
   };
 
@@ -73,9 +73,8 @@ const Payment = () => {
     try {
       const userInfo = JSON.parse(localStorage.getItem('userInfo'));
       const token = userInfo ? userInfo.token : '';
-      
       const config = { headers: { Authorization: `Bearer ${token}` } };
-      
+
       const payload = {
         appointmentType: bookingData.package.title,
         callType: bookingData.package.type === 'voice' ? 'Voice Call' : 'Video Call',
@@ -97,11 +96,9 @@ const Payment = () => {
       };
 
       const { data } = await axios.post('/api/bookings/create', payload, config);
-      
       localStorage.removeItem('pendingBooking');
       localStorage.removeItem('tempAppointment');
       navigate(`/success/${data._id}`);
-      
     } catch (error) {
       toast.error(error.response?.data?.message || 'Failed to submit booking. Please try again.');
       setSubmitting(false);
@@ -117,7 +114,6 @@ const Payment = () => {
         const token = userInfo ? userInfo.token : '';
         const config = { headers: { Authorization: `Bearer ${token}` } };
 
-        // Convert amount to paise as required by backend
         const amountInPaise = Math.round(parseFloat(totalAmount) * 100);
 
         const { data: order } = await axios.post('/api/payment/create-order', { amount: amountInPaise, currency: currency }, config);
@@ -132,11 +128,11 @@ const Payment = () => {
           handler: async function (response) {
             try {
               await axios.post('/api/payment/verify', {
-                  razorpay_order_id: response.razorpay_order_id,
-                  razorpay_payment_id: response.razorpay_payment_id,
-                  razorpay_signature: response.razorpay_signature,
+                razorpay_order_id: response.razorpay_order_id,
+                razorpay_payment_id: response.razorpay_payment_id,
+                razorpay_signature: response.razorpay_signature,
               }, config);
-              
+
               const payload = {
                 appointmentType: bookingData.package.title,
                 callType: bookingData.package.type === 'voice' ? 'Voice Call' : 'Video Call',
@@ -151,7 +147,7 @@ const Payment = () => {
                 ...bookingData.customerDetails,
                 paymentMethod: 'Razorpay',
                 paymentStatus: 'Completed',
-                razorpayOrderId: order.order_id
+                razorpayOrderId: order.order_id,
               };
 
               const { data: bookingResult } = await axios.post('/api/bookings/create', payload, config);
@@ -167,17 +163,17 @@ const Payment = () => {
             email: bookingData.customerDetails.customerEmail,
             contact: bookingData.customerDetails.customerPhone,
           },
-          theme: { color: '#2E7D32' },
+          theme: { color: '#254a29' },
           modal: {
             ondismiss: function() {
               toast.info('Payment cancelled by user');
-            }
-          }
+            },
+          },
         };
 
         const rzp = new window.Razorpay(options);
         rzp.on('payment.failed', function (response){
-             toast.error(response.error.description || 'Payment Failed');
+          toast.error(response.error.description || 'Payment Failed');
         });
         rzp.open();
       } catch (err) {
@@ -195,140 +191,349 @@ const Payment = () => {
   };
 
   return (
-    <div className="min-h-screen pt-24 pb-12 bg-sage-50 px-4">
-      <div className="max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-8">
-        
-        {/* Left Column — Summary & Bank */}
-        <div className="space-y-6">
-          <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} className="card border-transparent shadow-md bg-white">
-            <div className="flex justify-between items-start mb-6">
-              <div>
-                <h2 className="text-3xl font-serif font-bold text-sage-900 mb-1">Finalize Payment</h2>
-                <p className="text-sage-500 text-sm">Secure your healing session below.</p>
-              </div>
-              <div className="text-right">
-                <span className="text-4xl font-bold text-darkGreen">{symbol}{totalAmount}</span>
-                <p className="text-xs text-sage-400 mt-1 uppercase tracking-widest font-bold">Total Payable</p>
-              </div>
-            </div>
+    <div style={{ minHeight: '100svh', background: 'var(--clr-parchment)', paddingTop: 'var(--nav-h)' }}>
+      <div style={{ maxWidth: '1280px', margin: '0 auto', padding: 'var(--space-12) 24px var(--space-20)' }}>
 
-            <div className="bg-sage-50 rounded-2xl p-4 flex flex-wrap gap-6 items-center border border-sage-100">
-               <div className="flex items-center gap-2">
-                 <FaCalendarAlt className="text-darkGreen" />
-                 <span className="text-sm font-semibold text-sage-700">{new Date(bookingData.appointment.date).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}</span>
-               </div>
-               <div className="flex items-center gap-2">
-                 <FaClock className="text-darkGreen" />
-                 <span className="text-sm font-semibold text-sage-700">{formatTime12h(bookingData.appointment.time)}</span>
-               </div>
-               <div className="flex items-center gap-2 ml-auto">
-                 <span className="px-3 py-1 bg-darkGreen/10 text-darkGreen rounded-full text-[10px] font-bold uppercase">{bookingData.package.duration} Mins</span>
-               </div>
-            </div>
-          </motion.div>
+        {/* ── Grid ── */}
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '32px' }} className="lg:grid-cols-2">
 
-          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }} className="card bg-[#e3ebe3] border-transparent shadow-none">
-            <h3 className="text-xl font-serif font-bold text-sage-900 mb-4">Manual Bank Transfer</h3>
-            <p className="text-sage-700 text-sm mb-6 leading-relaxed">Transfer the exact amount to the following account to confirm your session instantly.</p>
-            
-            <div className="space-y-4">
-              <div>
-                <p className="text-[10px] font-bold text-sage-600 tracking-widest mb-1 uppercase">Bank Name</p>
-                <div className="flex justify-between items-center bg-white p-3.5 rounded-xl border border-sage-200">
-                  <span className="text-sage-900 font-semibold">Global Wellness Trust - HDFC Bank</span>
-                  <button onClick={() => handleCopy('Global Wellness Trust', 'bank')} className="text-sage-300 hover:text-darkGreen transition-colors">
-                    {copiedField === 'bank' ? <FaCheckCircle className="text-darkGreen" /> : <FaCopy />}
-                  </button>
-                </div>
-              </div>
-              
-              <div>
-                <p className="text-[10px] font-bold text-sage-600 tracking-widest mb-1 uppercase">Account Number</p>
-                <div className="flex justify-between items-center bg-white p-3.5 rounded-xl border border-sage-200">
-                  <span className="text-sage-900 font-semibold">987 654 321 000</span>
-                  <button onClick={() => handleCopy('987654321000', 'acc')} className="text-sage-300 hover:text-darkGreen transition-colors">
-                    {copiedField === 'acc' ? <FaCheckCircle className="text-darkGreen" /> : <FaCopy />}
-                  </button>
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
+          {/* ── Left side: Summary & Account ── */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+            <motion.div
+              initial={{ opacity: 0, x: -16 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
+              style={{
+                background: '#fff',
+                border: '1px solid var(--clr-border)',
+                borderRadius: 'var(--r-xl)',
+                padding: '40px',
+                boxShadow: 'var(--shadow-sm)',
+              }}
+            >
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '32px', gap: '20px' }}>
                 <div>
-                  <p className="text-[10px] font-bold text-sage-600 tracking-widest mb-1 uppercase">IFSC Code</p>
-                  <div className="flex justify-between items-center bg-white p-3.5 rounded-xl border border-sage-200">
-                    <span className="text-sage-900 font-semibold">HDFC0001234</span>
-                    <button onClick={() => handleCopy('HDFC0001234', 'ifsc')} className="text-sage-300 hover:text-darkGreen transition-colors">
-                      {copiedField === 'ifsc' ? <FaCheckCircle className="text-darkGreen" /> : <FaCopy />}
-                    </button>
-                  </div>
+                  <h2 style={{ fontFamily: 'var(--font-display)', fontSize: '1.875rem', fontWeight: 500, color: 'var(--clr-ink)', marginBottom: '8px' }}>
+                    Honorarium
+                  </h2>
+                  <p style={{ fontSize: '0.9375rem', color: 'var(--clr-warm-gray)' }}>Secure your healing consultation.</p>
                 </div>
-                <div>
-                  <p className="text-[10px] font-bold text-sage-600 tracking-widest mb-1 uppercase">UPI ID</p>
-                  <div className="flex justify-between items-center bg-white p-3.5 rounded-xl border border-sage-200">
-                    <span className="text-sage-900 font-semibold">zealhealing@upi</span>
-                    <button onClick={() => handleCopy('zealhealing@upi', 'upi')} className="text-sage-300 hover:text-darkGreen transition-colors">
-                      {copiedField === 'upi' ? <FaCheckCircle className="text-darkGreen" /> : <FaCopy />}
-                    </button>
-                  </div>
+                <div style={{ textAlign: 'right' }}>
+                  <p style={{ fontFamily: 'var(--font-display)', fontSize: '2.5rem', fontWeight: 600, color: 'var(--clr-forest-700)', lineHeight: 1 }}>
+                    {symbol}{Number(totalAmount).toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                  </p>
+                  <p style={{ fontSize: '0.625rem', fontWeight: 700, letterSpacing: '0.15em', textTransform: 'uppercase', color: 'var(--clr-warm-gray)', marginTop: '6px' }}>
+                    Total Payable
+                  </p>
                 </div>
               </div>
-            </div>
-          </motion.div>
-        </div>
 
-        {/* Right Column — Payment Proof */}
-        <div className="space-y-6">
-          <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} className="card border-transparent bg-white shadow-sm p-8">
-            <h3 className="text-xl font-serif font-bold text-sage-900 mb-2">Submit Payment Proof</h3>
-            <p className="text-sage-500 text-sm mb-8">Verification usually takes 1-2 hours during business hours.</p>
-
-            <div className="space-y-5">
-              <div>
-                <label className="block text-sage-700 font-bold mb-2 text-[11px] uppercase tracking-wider">Transaction ID / UTR Number *</label>
-                <input 
-                  type="text" 
-                  className="input-field w-full bg-sage-50 border-sage-100" 
-                  placeholder="Paste your transaction ID here"
-                  value={transactionId}
-                  onChange={(e) => setTransactionId(e.target.value)}
-                  required
-                />
+              {/* Badges bar */}
+              <div style={{
+                background: 'var(--clr-forest-50)',
+                borderRadius: 'var(--r-lg)',
+                padding: '16px 20px',
+                border: '1px solid var(--clr-border)',
+                display: 'flex',
+                flexWrap: 'wrap',
+                gap: '24px',
+                alignItems: 'center',
+              }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.875rem', color: 'var(--clr-ink)', fontWeight: 600 }}>
+                  <span style={{ fontSize: '1.1rem' }}>📅</span>
+                  <span>{new Date(bookingData.appointment.date).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}</span>
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.875rem', color: 'var(--clr-ink)', fontWeight: 600 }}>
+                  <span style={{ fontSize: '1.1rem' }}>⏱</span>
+                  <span>{formatTime12h(bookingData.appointment.time)}</span>
+                </div>
+                <div style={{ marginLeft: 'auto' }}>
+                  <span style={{
+                    padding: '5px 12px',
+                    background: 'rgba(37,74,41,0.08)',
+                    borderRadius: '99px',
+                    fontSize: '0.6875rem',
+                    fontWeight: 700,
+                    color: 'var(--clr-forest-700)',
+                    letterSpacing: '0.06em',
+                  }}>
+                    {bookingData.package.duration} MINS
+                  </span>
+                </div>
               </div>
+            </motion.div>
 
-              <div>
-                <label className="block text-sage-700 font-bold mb-2 text-[11px] uppercase tracking-wider">Upload Screenshot *</label>
-                <label className="flex flex-col items-center justify-center w-full h-44 border-2 border-dashed border-sage-200 rounded-2xl cursor-pointer bg-sage-50 hover:bg-sage-100 transition-all overflow-hidden relative">
-                  {screenshotPreview ? (
-                    <img src={screenshotPreview} alt="Preview" className="w-full h-full object-contain p-2" />
-                  ) : (
-                    <div className="flex flex-col items-center px-4 text-center">
-                      <FaCloudUploadAlt className="text-4xl text-sage-300 mb-3" />
-                      <p className="text-sm font-bold text-sage-600">Click to upload screenshot</p>
-                      <p className="text-xs text-sage-400 mt-2">JPG or PNG formats allowed</p>
+            {/* Bank details panel (luxury dark) */}
+            <motion.div
+              initial={{ opacity: 0, y: 16 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.08, duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
+              style={{
+                background: 'var(--clr-forest-900)',
+                color: '#fff',
+                borderRadius: 'var(--r-xl)',
+                padding: '40px',
+                position: 'relative',
+                overflow: 'hidden',
+                boxShadow: 'var(--shadow-md)',
+              }}
+            >
+              <div style={{ position: 'absolute', inset: 0, background: 'radial-gradient(ellipse at top right, rgba(74,175,80,0.10), transparent)', pointerEvents: 'none' }} />
+              <div style={{ position: 'relative', zIndex: 1 }}>
+                <h3 style={{ fontFamily: 'var(--font-display)', fontSize: '1.5rem', fontWeight: 500, color: '#fff', marginBottom: '8px' }}>
+                  Manual Bank Transfer
+                </h3>
+                <p style={{ fontSize: '0.9375rem', color: 'rgba(255,255,255,0.6)', marginBottom: '32px', lineHeight: 1.6 }}>
+                  Directly transfer the honorarium to the details below to schedule your reading.
+                </p>
+
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+                  {[
+                    { label: 'Bank Name', val: 'Global Wellness Trust - HDFC Bank', key: 'bank' },
+                    { label: 'Account Number', val: '987654321000', labelVal: '987 654 321 000', key: 'acc' },
+                  ].map((field) => (
+                    <div key={field.key} style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                      <span style={{ fontSize: '0.625rem', fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.4)' }}>
+                        {field.label}
+                      </span>
+                      <div style={{
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        alignItems: 'center',
+                        background: 'rgba(255,255,255,0.06)',
+                        padding: '14px 18px',
+                        borderRadius: 'var(--r-md)',
+                        border: '1px solid rgba(255,255,255,0.1)',
+                      }}>
+                        <span style={{ fontSize: '0.9375rem', fontWeight: 600, color: '#fff' }}>{field.labelVal || field.val}</span>
+                        <button
+                          onClick={() => handleCopy(field.val, field.key)}
+                          style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'rgba(255,255,255,0.4)', transition: 'color 155ms ease', padding: '4px' }}
+                          onMouseEnter={e => e.currentTarget.style.color = '#fff'}
+                          onMouseLeave={e => e.currentTarget.style.color = 'rgba(255,255,255,0.4)'}
+                        >
+                          {copiedField === field.key ? '✓' : 'Copy'}
+                        </button>
+                      </div>
                     </div>
-                  )}
-                  <input type="file" className="hidden" accept="image/*" onChange={handleScreenshotChange} />
-                </label>
-              </div>
+                  ))}
 
-              <button 
-                onClick={handleManualPaymentSubmit} 
-                className={`btn-primary w-full py-5 text-xl font-serif font-bold shadow-xl shadow-darkGreen/10 transition-all ${submitting ? 'opacity-70' : ''}`}
-                disabled={submitting}
-              >
-                {submitting ? 'Authenticating...' : "I've Made The Transfer"}
-              </button>
-              
-              <div className="relative py-4">
-                <div className="absolute inset-0 flex items-center"><div className="w-full border-t border-sage-100"></div></div>
-                <div className="relative flex justify-center"><span className="bg-white px-4 text-xs font-bold text-sage-300 uppercase tracking-widest">or pay instantly</span></div>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
+                    {[
+                      { label: 'IFSC Code', val: 'HDFC0001234', key: 'ifsc' },
+                      { label: 'UPI ID', val: 'zealhealing@upi', key: 'upi' },
+                    ].map((field) => (
+                      <div key={field.key} style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                        <span style={{ fontSize: '0.625rem', fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.4)' }}>
+                          {field.label}
+                        </span>
+                        <div style={{
+                          display: 'flex',
+                          justifyContent: 'space-between',
+                          alignItems: 'center',
+                          background: 'rgba(255,255,255,0.06)',
+                          padding: '14px 18px',
+                          borderRadius: 'var(--r-md)',
+                          border: '1px solid rgba(255,255,255,0.1)',
+                        }}>
+                          <span style={{ fontSize: '0.875rem', fontWeight: 600, color: '#fff' }}>{field.val}</span>
+                          <button
+                            onClick={() => handleCopy(field.val, field.key)}
+                            style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'rgba(255,255,255,0.4)', transition: 'color 155ms ease', padding: '4px' }}
+                            onMouseEnter={e => e.currentTarget.style.color = '#fff'}
+                            onMouseLeave={e => e.currentTarget.style.color = 'rgba(255,255,255,0.4)'}
+                          >
+                            {copiedField === field.key ? '✓' : 'Copy'}
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
               </div>
+            </motion.div>
+          </div>
 
-              <button onClick={loadRazorpay} className="w-full py-4 rounded-2xl border-2 border-darkGreen text-darkGreen font-bold hover:bg-sage-50 transition-colors flex items-center justify-center gap-3">
-                Pay with Card / Netbanking
-              </button>
-            </div>
-          </motion.div>
+          {/* ── Right side: Submit Proof & Instant Checkout ── */}
+          <div>
+            <motion.div
+              initial={{ opacity: 0, x: 16 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
+              style={{
+                background: '#fff',
+                border: '1px solid var(--clr-border)',
+                borderRadius: 'var(--r-xl)',
+                padding: '40px',
+                boxShadow: 'var(--shadow-sm)',
+              }}
+            >
+              <h3 style={{ fontFamily: 'var(--font-display)', fontSize: '1.625rem', fontWeight: 500, color: 'var(--clr-ink)', marginBottom: '8px' }}>
+                Verify Direct Transfer
+              </h3>
+              <p style={{ fontSize: '0.9375rem', color: 'var(--clr-warm-gray)', marginBottom: '32px', lineHeight: 1.6 }}>
+                Submit your transaction details. Healers match and confirm manual bookings within 1-2 hours.
+              </p>
+
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+                {/* Inputs */}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                  <label className="field-label" style={{
+                    fontFamily: 'var(--font-body)',
+                    fontSize: '0.6875rem',
+                    fontWeight: 700,
+                    letterSpacing: '0.12em',
+                    textTransform: 'uppercase',
+                    color: 'var(--clr-forest-700)',
+                  }}>
+                    Transaction ID / UTR Code *
+                  </label>
+                  <input
+                    type="text"
+                    className="input-field"
+                    placeholder="Enter reference code"
+                    value={transactionId}
+                    onChange={(e) => setTransactionId(e.target.value)}
+                    required
+                    style={{
+                      width: '100%',
+                      height: 52,
+                      padding: '0 16px',
+                      background: '#fff',
+                      border: '1.5px solid var(--clr-border-strong)',
+                      borderRadius: 'var(--r-md)',
+                      fontFamily: 'var(--font-body)',
+                      fontSize: '0.9375rem',
+                      color: 'var(--clr-ink)',
+                      outline: 'none',
+                    }}
+                  />
+                </div>
+
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                  <label className="field-label" style={{
+                    fontFamily: 'var(--font-body)',
+                    fontSize: '0.6875rem',
+                    fontWeight: 700,
+                    letterSpacing: '0.12em',
+                    textTransform: 'uppercase',
+                    color: 'var(--clr-forest-700)',
+                  }}>
+                    Sender Account Number / UPI handle (Optional)
+                  </label>
+                  <input
+                    type="text"
+                    className="input-field"
+                    placeholder="E.g. HDFC ending in 4321"
+                    value={senderAccountNumber}
+                    onChange={(e) => setSenderAccountNumber(e.target.value)}
+                    style={{
+                      width: '100%',
+                      height: 52,
+                      padding: '0 16px',
+                      background: '#fff',
+                      border: '1.5px solid var(--clr-border-strong)',
+                      borderRadius: 'var(--r-md)',
+                      fontFamily: 'var(--font-body)',
+                      fontSize: '0.9375rem',
+                      color: 'var(--clr-ink)',
+                      outline: 'none',
+                    }}
+                  />
+                </div>
+
+                {/* File Upload Screen */}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                  <label className="field-label" style={{
+                    fontFamily: 'var(--font-body)',
+                    fontSize: '0.6875rem',
+                    fontWeight: 700,
+                    letterSpacing: '0.12em',
+                    textTransform: 'uppercase',
+                    color: 'var(--clr-forest-700)',
+                  }}>
+                    Upload Screenshot Proof *
+                  </label>
+                  <label style={{
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    width: '100%',
+                    height: 180,
+                    border: '2px dashed var(--clr-border-strong)',
+                    borderRadius: 'var(--r-xl)',
+                    cursor: 'pointer',
+                    background: 'var(--clr-forest-50)',
+                    transition: 'all 200ms ease',
+                    overflow: 'hidden',
+                    position: 'relative',
+                  }}>
+                    {screenshotPreview ? (
+                      <img src={screenshotPreview} alt="Receipt preview" style={{ width: '100%', height: '100%', objectFit: 'contain', padding: '12px' }} />
+                    ) : (
+                      <div style={{ textAlign: 'center', padding: '20px' }}>
+                        <span style={{ fontSize: '2rem', display: 'block', marginBottom: '8px' }}>📤</span>
+                        <p style={{ fontSize: '0.8125rem', fontWeight: 700, color: 'var(--clr-forest-800)' }}>Select Transfer Screenshot</p>
+                        <p style={{ fontSize: '0.6875rem', color: 'var(--clr-warm-gray)', marginTop: '4px' }}>PNG or JPG formats up to 5MB</p>
+                      </div>
+                    )}
+                    <input type="file" style={{ display: 'none' }} accept="image/*" onChange={handleScreenshotChange} />
+                  </label>
+                </div>
+
+                <div style={{ marginTop: '8px' }}>
+                  <button
+                    onClick={handleManualPaymentSubmit}
+                    className="btn-primary"
+                    style={{ width: '100%', borderRadius: 'var(--r-md)' }}
+                    disabled={submitting}
+                  >
+                    {submitting ? 'Verifying details…' : 'Verify & Complete Booking'}
+                  </button>
+                </div>
+
+                <div style={{ display: 'flex', alignItems: 'center', margin: '8px 0' }}>
+                  <div style={{ flexGrow: 1, borderTop: '1px solid var(--clr-border)' }} />
+                  <span style={{ padding: '0 16px', fontSize: '0.625rem', fontWeight: 700, letterSpacing: '0.12em', color: 'var(--clr-warm-gray)', textTransform: 'uppercase' }}>
+                    or checkout instantly
+                  </span>
+                  <div style={{ flexGrow: 1, borderTop: '1px solid var(--clr-border)' }} />
+                </div>
+
+                <button
+                  onClick={loadRazorpay}
+                  style={{
+                    width: '100%',
+                    height: 48,
+                    background: '#fff',
+                    color: 'var(--clr-forest-700)',
+                    border: '1.5px solid var(--clr-border-strong)',
+                    borderRadius: 'var(--r-md)',
+                    fontFamily: 'var(--font-body)',
+                    fontSize: '0.875rem',
+                    fontWeight: 700,
+                    cursor: 'pointer',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    transition: 'all 200ms ease',
+                  }}
+                  onMouseEnter={e => {
+                    e.currentTarget.style.borderColor = 'var(--clr-forest-700)';
+                    e.currentTarget.style.background = 'var(--clr-forest-50)';
+                  }}
+                  onMouseLeave={e => {
+                    e.currentTarget.style.borderColor = 'var(--clr-border-strong)';
+                    e.currentTarget.style.background = '#fff';
+                  }}
+                >
+                  🔒 Pay Online (Cards, UPI, Netbanking)
+                </button>
+              </div>
+            </motion.div>
+          </div>
+
         </div>
 
       </div>

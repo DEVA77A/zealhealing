@@ -13,12 +13,9 @@ const UserProfile = () => {
   useEffect(() => {
     const fetchMyBookings = async () => {
       try {
-        const config = {
-          headers: {
-            Authorization: `Bearer ${getToken()}`,
-          },
-        };
-        const { data } = await axios.get('/api/bookings/mybookings', config);
+        const { data } = await axios.get('/api/bookings/mybookings', {
+          headers: { Authorization: `Bearer ${getToken()}` },
+        });
         setBookings(data);
       } catch (error) {
         toast.error(error.response?.data?.message || 'Failed to fetch bookings');
@@ -26,17 +23,14 @@ const UserProfile = () => {
         setLoading(false);
       }
     };
-
-    if (user) {
-      fetchMyBookings();
-    }
+    if (user) fetchMyBookings();
   }, [user, getToken]);
 
   const handleDownloadInvoice = async (bookingId, invoiceNumber) => {
     try {
       const res = await axios.get(`/api/invoice/${bookingId}`, {
         headers: { Authorization: `Bearer ${getToken()}` },
-        responseType: 'blob'
+        responseType: 'blob',
       });
       const url = window.URL.createObjectURL(new Blob([res.data]));
       const link = document.createElement('a');
@@ -45,132 +39,260 @@ const UserProfile = () => {
       document.body.appendChild(link);
       link.click();
       link.remove();
-    } catch (error) {
+    } catch {
       toast.error('Failed to download invoice');
+    }
+  };
+
+  const getStatusBadge = (status) => {
+    let styles = {
+      padding: '4px 10px',
+      borderRadius: '99px',
+      fontSize: '0.625rem',
+      fontWeight: 700,
+      letterSpacing: '0.08em',
+      textTransform: 'uppercase',
+      display: 'inline-flex',
+      alignItems: 'center',
+      border: '1px solid',
+    };
+
+    switch (status) {
+      case 'Queued':
+        return <span style={{ ...styles, background: '#fffbeb', color: '#b45309', borderColor: '#fde68a' }}>⏳ Pending</span>;
+      case 'Accepted':
+        return <span style={{ ...styles, background: 'var(--clr-forest-50)', color: 'var(--clr-forest-700)', borderColor: 'var(--clr-border)' }}>✓ Confirmed</span>;
+      case 'Completed':
+        return <span style={{ ...styles, background: '#e8f5e9', color: '#2e7d32', borderColor: '#a5d6a7' }}>✓ Completed</span>;
+      case 'Rejected': 
+      case 'Cancelled':
+        return <span style={{ ...styles, background: '#fef2f2', color: '#b91c1c', borderColor: '#fca5a5' }}>✕ {status}</span>;
+      default:
+        return <span style={{ ...styles, background: 'var(--clr-forest-50)', color: 'var(--clr-warm-gray)', borderColor: 'var(--clr-border)' }}>{status}</span>;
+    }
+  };
+
+  const getPaymentStatusBadge = (status) => {
+    let styles = {
+      padding: '3px 8px',
+      borderRadius: '4px',
+      fontSize: '0.5625rem',
+      fontWeight: 700,
+      letterSpacing: '0.06em',
+      textTransform: 'uppercase',
+      display: 'inline-flex',
+    };
+
+    switch (status) {
+      case 'Completed':
+        return <span style={{ ...styles, background: 'rgba(46,125,50,0.1)', color: '#2e7d32' }}>Paid</span>;
+      case 'Failed':
+        return <span style={{ ...styles, background: '#fee2e2', color: '#b91c1c' }}>Failed</span>;
+      default:
+        return <span style={{ ...styles, background: '#fffbeb', color: '#b45309' }}>Pending</span>;
     }
   };
 
   if (!user) return null;
 
   return (
-    <div className="min-h-screen pt-24 pb-12 bg-sage-50 px-4">
-      <div className="max-w-6xl mx-auto">
+    <div style={{ minHeight: '100svh', background: 'var(--clr-parchment)', paddingTop: 'var(--nav-h)', paddingBottom: '80px' }}>
+      <div style={{ maxWidth: '1280px', margin: '0 auto', padding: 'var(--space-12) 24px' }}>
+
+        {/* Header */}
         <motion.div
-          initial={{ opacity: 0, y: 20 }}
+          initial={{ opacity: 0, y: -8 }}
           animate={{ opacity: 1, y: 0 }}
-          className="mb-8"
+          transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
+          style={{ marginBottom: '40px' }}
         >
-          <h1 className="text-4xl font-serif font-bold text-darkGreen">My Profile</h1>
-          <p className="text-sage-700 mt-2">Manage your details and view your booking history.</p>
+          <h1 style={{ fontFamily: 'var(--font-display)', fontSize: '2.75rem', fontWeight: 500, color: 'var(--clr-ink)', letterSpacing: '-0.02em', marginBottom: '8px' }}>
+            Inner Studio
+          </h1>
+          <p style={{ fontSize: '0.9375rem', color: 'var(--clr-warm-gray)' }}>Personal profile records, security settings, and active consultation logs.</p>
         </motion.div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-          {/* User Details Sidebar */}
+        {/* Grid panel */}
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '32px' }} className="lg:grid-cols-3">
+
+          {/* Sidebar Profiler */}
           <motion.div
-            initial={{ opacity: 0, x: -20 }}
+            initial={{ opacity: 0, x: -16 }}
             animate={{ opacity: 1, x: 0 }}
-            className="md:col-span-1"
+            transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
+            style={{ gridColumn: 'span 1' }}
           >
-            <div className="bg-white rounded-2xl shadow-sm border border-sage-100 p-6 sticky top-28">
-              <div className="flex items-center justify-center mb-6">
-                <div className="w-24 h-24 rounded-full bg-sage-200 flex items-center justify-center text-3xl text-darkGreen font-bold border-4 border-white shadow-sm">
+            <div style={{
+              background: '#fff',
+              border: '1px solid var(--clr-border)',
+              borderRadius: 'var(--r-xl)',
+              padding: '40px',
+              boxShadow: 'var(--shadow-sm)',
+              position: 'sticky',
+              top: '110px',
+            }}>
+              {/* Avatar circle */}
+              <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '32px' }}>
+                <div style={{
+                  width: 80, height: 80,
+                  borderRadius: '50%',
+                  background: 'var(--clr-forest-50)',
+                  border: '1.5px solid var(--clr-border)',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  fontSize: '2rem', fontWeight: 500, color: 'var(--clr-forest-700)',
+                  fontFamily: 'var(--font-display)',
+                }}>
                   {user.name.charAt(0).toUpperCase()}
                 </div>
               </div>
-              
-              <div className="space-y-4">
-                <div>
-                  <label className="text-xs text-sage-500 uppercase tracking-wider font-semibold">Name</label>
-                  <p className="font-medium text-sage-900">{user.name}</p>
-                </div>
-                <div>
-                  <label className="text-xs text-sage-500 uppercase tracking-wider font-semibold">Email</label>
-                  <p className="font-medium text-sage-900">{user.email}</p>
-                </div>
-                <div>
-                  <label className="text-xs text-sage-500 uppercase tracking-wider font-semibold">Phone</label>
-                  <p className="font-medium text-sage-900">{user.phone}</p>
-                </div>
-                {user.location && (
-                  <div>
-                    <label className="text-xs text-sage-500 uppercase tracking-wider font-semibold">Location / Currency</label>
-                    <p className="font-medium text-sage-900">{user.location.country} ({user.location.currency})</p>
+
+              {/* Data list */}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+                {[
+                  { label: 'Name', value: user.name },
+                  { label: 'Email Primary', value: user.email },
+                  { label: 'Contact Phone', value: user.phone || '—' },
+                  ...(user.location ? [{ label: 'Region / Segment', value: `${user.location.country} (${user.location.currency})` }] : []),
+                ].map((item) => (
+                  <div key={item.label} style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                    <span style={{ fontSize: '0.625rem', fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase', color: 'var(--clr-warm-gray)' }}>
+                      {item.label}
+                    </span>
+                    <span style={{ fontSize: '0.9375rem', fontWeight: 600, color: 'var(--clr-ink)' }}>
+                      {item.value}
+                    </span>
                   </div>
-                )}
+                ))}
               </div>
             </div>
           </motion.div>
 
-          {/* Bookings Area */}
+          {/* Bookings log */}
           <motion.div
-            initial={{ opacity: 0, x: 20 }}
+            initial={{ opacity: 0, x: 16 }}
             animate={{ opacity: 1, x: 0 }}
-            className="md:col-span-2 space-y-6"
+            transition={{ duration: 0.5, delay: 0.05, ease: [0.16, 1, 0.3, 1] }}
+            style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}
+            className="lg:col-span-2"
           >
-            <h2 className="text-2xl font-serif font-bold text-darkGreen mb-4">My Bookings</h2>
+            <h2 style={{ fontFamily: 'var(--font-display)', fontSize: '1.625rem', fontWeight: 500, color: 'var(--clr-ink)', marginBottom: '8px' }}>
+              Booking Log
+            </h2>
 
             {loading ? (
-              <div className="flex justify-center py-12">
-                <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-darkGreen"></div>
+              <div style={{ display: 'flex', justifyContent: 'center', padding: '60px 0' }}>
+                <div className="spinner" style={{ width: 28, height: 28 }} />
               </div>
             ) : bookings.length === 0 ? (
-              <div className="bg-white rounded-2xl shadow-sm border border-sage-100 p-12 text-center">
-                <div className="text-4xl mb-4">🌿</div>
-                <h3 className="text-xl font-medium text-sage-800 mb-2">No bookings yet</h3>
-                <p className="text-sage-600 mb-6">You haven't booked any sessions or classes yet.</p>
-                <Link to="/sessions" className="btn-primary inline-block">
-                  Book a Session
+              <div style={{
+                background: '#fff',
+                border: '1px solid var(--clr-border)',
+                borderRadius: 'var(--r-xl)',
+                padding: '60px 40px',
+                textAlign: 'center',
+                boxShadow: 'var(--shadow-sm)',
+              }}>
+                <span style={{ fontSize: '2rem', display: 'block', marginBottom: '16px' }}>🌿</span>
+                <h3 style={{ fontFamily: 'var(--font-display)', fontSize: '1.25rem', fontWeight: 500, color: 'var(--clr-ink)', marginBottom: '8px' }}>
+                  No historical records
+                </h3>
+                <p style={{ fontSize: '0.875rem', color: 'var(--clr-warm-gray)', marginBottom: '28px' }}>
+                  Your journey ledger is currently blank. Schedule your first consultation to begin.
+                </p>
+                <Link to="/sessions" className="btn-primary" style={{ display: 'inline-flex', borderRadius: 'var(--r-md)' }}>
+                  Book Session
                 </Link>
               </div>
             ) : (
-              bookings.map((booking) => (
-                <div key={booking._id} className="bg-white rounded-2xl shadow-sm border border-sage-100 p-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4 transition-all hover:shadow-md">
-                  <div>
-                    <div className="flex items-center gap-3 mb-2">
-                      <h3 className="font-bold text-lg text-sage-900">{booking.appointmentType}</h3>
-                      <span className={`px-3 py-1 rounded-full text-xs font-semibold ${
-                        booking.bookingStatus === 'Accepted' ? 'bg-green-100 text-green-800' :
-                        booking.bookingStatus === 'Rejected' ? 'bg-red-100 text-red-800' :
-                        booking.bookingStatus === 'Completed' ? 'bg-blue-100 text-blue-800' :
-                        'bg-yellow-100 text-yellow-800'
-                      }`}>
-                        {booking.bookingStatus}
-                      </span>
-                    </div>
-                    <div className="text-sm text-sage-600 space-y-1">
-                      <p>Type: <span className="capitalize font-medium">{booking.callType} Call</span></p>
-                      <p>Duration: <span className="font-medium">{booking.duration} Minutes</span></p>
-                      <p>Booked on: {new Date(booking.createdAt).toLocaleDateString()}</p>
-                      {['Accepted', 'Completed'].includes(booking.bookingStatus) && booking.invoiceNumber && (
-                        <button 
+              bookings.map((booking, idx) => {
+                const canDownload = ['Accepted', 'Completed'].includes(booking.bookingStatus) && booking.invoiceNumber;
+
+                return (
+                  <motion.div
+                    key={booking._id}
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: idx * 0.04, duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
+                    style={{
+                      background: '#fff',
+                      border: '1px solid var(--clr-border)',
+                      borderRadius: 'var(--r-xl)',
+                      padding: '24px',
+                      display: 'flex',
+                      flexDirection: 'row',
+                      flexWrap: 'wrap',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      gap: '20px',
+                      boxShadow: 'var(--shadow-sm)',
+                    }}
+                  >
+                    {/* Left content block */}
+                    <div style={{ flexGrow: 1, minWidth: '240px' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap', marginBottom: '12px' }}>
+                        <h3 style={{ fontFamily: 'var(--font-display)', fontSize: '1.25rem', fontWeight: 600, color: 'var(--clr-ink)' }}>
+                          {booking.appointmentType}
+                        </h3>
+                        {getStatusBadge(booking.bookingStatus)}
+                      </div>
+
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', fontSize: '0.8125rem', color: 'var(--clr-warm-gray)' }}>
+                        <p>Format: <span style={{ color: 'var(--clr-ink)', fontWeight: 500, textTransform: 'capitalize' }}>{booking.callType} Call</span></p>
+                        <p>Duration: <span style={{ color: 'var(--clr-ink)', fontWeight: 500 }}>{booking.duration} minutes</span></p>
+                        <p>Scheduled: <span style={{ color: 'var(--clr-ink)', fontWeight: 500 }}>{new Date(booking.appointmentDate).toLocaleDateString()}</span></p>
+                      </div>
+
+                      {canDownload && (
+                        <button
                           onClick={() => handleDownloadInvoice(booking._id, booking.invoiceNumber)}
-                          className="text-darkGreen font-medium mt-2 flex items-center gap-1 hover:underline bg-sage-100 px-3 py-1 rounded-md transition-colors"
+                          style={{
+                            background: 'none',
+                            border: 'none',
+                            cursor: 'pointer',
+                            fontSize: '0.75rem',
+                            fontWeight: 700,
+                            letterSpacing: '0.04em',
+                            textTransform: 'uppercase',
+                            color: 'var(--clr-forest-700)',
+                            marginTop: '16px',
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: '6px',
+                          }}
                         >
-                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" /></svg>
-                          Download Invoice ({booking.invoiceNumber})
+                          📥 Invoice ({booking.invoiceNumber})
                         </button>
                       )}
                     </div>
-                  </div>
-                  
-                  <div className="sm:text-right flex flex-col sm:items-end border-t sm:border-t-0 sm:border-l border-sage-100 pt-4 sm:pt-0 sm:pl-6">
-                    <p className="text-sm text-sage-500 uppercase tracking-wider font-semibold mb-1">Amount</p>
-                    <p className="text-2xl font-bold text-darkGreen">
-                      {booking.currencySymbol}{booking.convertedAmount || booking.price}
-                    </p>
-                    <span className={`mt-2 px-2 py-1 rounded text-xs font-semibold inline-block ${
-                      booking.paymentStatus === 'Completed' ? 'bg-green-50 text-green-700' :
-                      booking.paymentStatus === 'Failed' ? 'bg-red-50 text-red-700' :
-                      'bg-orange-50 text-orange-700'
-                    }`}>
-                      Payment: {booking.paymentStatus}
-                    </span>
-                  </div>
-                </div>
-              ))
+
+                    {/* Right side amount */}
+                    <div style={{
+                      display: 'flex',
+                      flexDirection: 'column',
+                      alignItems: 'flex-start',
+                      paddingLeft: '24px',
+                      borderLeft: '1px solid var(--clr-border)',
+                      minWidth: '120px',
+                    }} className="sm:items-end sm:text-right">
+                      <span style={{ fontSize: '0.5625rem', fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase', color: 'var(--clr-warm-gray)', marginBottom: '3px' }}>
+                        Honorarium
+                      </span>
+                      <span style={{ fontFamily: 'var(--font-display)', fontSize: '1.625rem', fontWeight: 600, color: 'var(--clr-forest-700)', lineHeight: 1 }}>
+                        {booking.currencySymbol}{booking.convertedAmount || booking.price}
+                      </span>
+                      <div style={{ marginTop: '8px' }}>
+                        {getPaymentStatusBadge(booking.paymentStatus)}
+                      </div>
+                    </div>
+                  </motion.div>
+                );
+              })
             )}
+
           </motion.div>
+
         </div>
+
       </div>
     </div>
   );

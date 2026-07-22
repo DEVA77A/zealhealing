@@ -7,25 +7,135 @@ export default {
   theme: {
     extend: {
       colors: {
-        sage: {
-          50: '#f4f7f4',
-          100: '#e3ebe3',
-          200: '#c7d9c7',
-          300: '#a1bfa1',
-          400: '#759e75',
-          500: '#538253',
-          600: '#3f673f',
-          700: '#345234',
-          800: '#2c432c',
-          900: '#253825',
+        // Premium Indigo palette (kept as 'forest' key for backward compatibility)
+        forest: {
+          950: '#0f1016',
+          900: '#1e1b4b',
+          800: '#312e81',
+          700: '#4f46e5',
+          600: '#6366f1',
+          500: '#818cf8',
+          400: '#a5b4fc',
+          200: '#c7d2fe',
+          100: '#e0e7ff',
+          50:  '#f5f3ff',
         },
-        darkGreen: '#2E7D32', // Used in buttons and CTA
+        // Premium modern white & slate neutrals
+        parchment: '#ffffff',
+        linen: '#f8fafc',
+        oat: '#f1f5f9',
+        ink: '#0f172a',
+        // Cool Slates for sage (backward compatibility)
+        sage: {
+          50:  '#f8fafc',
+          100: '#f1f5f9',
+          200: '#e2e8f0',
+          300: '#cbd5e1',
+          400: '#94a3b8',
+          500: '#64748b',
+          600: '#475569',
+          700: '#334155',
+          800: '#1e293b',
+          900: '#0f172a',
+        },
+        darkGreen: '#4f46e5',
       },
       fontFamily: {
-        sans: ['Inter', 'sans-serif'],
-        serif: ['Playfair Display', 'serif'], // for elegant typography
-      }
+        display: ['Plus Jakarta Sans', 'Inter', 'system-ui', 'sans-serif'],
+        sans:    ['Inter', 'system-ui', 'sans-serif'],
+        serif:   ['Plus Jakarta Sans', 'Inter', 'system-ui', 'sans-serif'],
+        mono:    ['DM Mono', 'Courier New', 'monospace'],
+      },
+      fontSize: {
+        '10': '0.625rem',
+        '11': '0.6875rem',
+        '13': '0.8125rem',
+        '15': '0.9375rem',
+        '17': '1.0625rem',
+      },
+      spacing: {
+        '18': '4.5rem',
+        '22': '5.5rem',
+        '26': '6.5rem',
+        '30': '7.5rem',
+        '34': '8.5rem',
+        '38': '9.5rem',
+        '42': '10.5rem',
+        '46': '11.5rem',
+        '50': '12.5rem',
+        '72': '18rem',
+        '84': '21rem',
+        '96': '24rem',
+        '112': '28rem',
+        '128': '32rem',
+      },
+      borderRadius: {
+        '4': '4px',
+        '8': '8px',
+        '12': '12px',
+        '16': '16px',
+        '20': '20px',
+        '24': '24px',
+        '32': '32px',
+      },
+      boxShadow: {
+        'xs':     '0 1px 2px rgba(0,0,0,0.04)',
+        'sm':     '0 1px 3px rgba(0,0,0,0.05), 0 4px 12px rgba(0,0,0,0.04)',
+        'md':     '0 2px 6px rgba(0,0,0,0.05), 0 8px 24px rgba(0,0,0,0.06)',
+        'lg':     '0 4px 12px rgba(0,0,0,0.06), 0 16px 48px rgba(0,0,0,0.08)',
+        'xl':     '0 8px 24px rgba(0,0,0,0.07), 0 32px 72px rgba(0,0,0,0.10)',
+        'forest': '0 4px 16px rgba(46,125,50,0.15), 0 16px 48px rgba(46,125,50,0.10)',
+        'inner-sm': 'inset 0 1px 3px rgba(0,0,0,0.06)',
+      },
+      animation: {
+        'fade-up':    'fade-up 500ms cubic-bezier(0.16,1,0.3,1) both',
+        'fade-in':    'fade-in 400ms ease both',
+        'scale-in':   'scale-in 400ms cubic-bezier(0.16,1,0.3,1) both',
+        'float':      'float 4s ease-in-out infinite',
+        'spin-slow':  'spin 2s linear infinite',
+        'shimmer':    'shimmer 1.6s ease-in-out infinite',
+      },
+      keyframes: {
+        'fade-up': {
+          from: { opacity: '0', transform: 'translateY(20px)' },
+          to:   { opacity: '1', transform: 'translateY(0)' },
+        },
+        'fade-in': {
+          from: { opacity: '0' },
+          to:   { opacity: '1' },
+        },
+        'scale-in': {
+          from: { opacity: '0', transform: 'scale(0.92)' },
+          to:   { opacity: '1', transform: 'scale(1)' },
+        },
+        float: {
+          '0%, 100%': { transform: 'translateY(0)' },
+          '50%':       { transform: 'translateY(-8px)' },
+        },
+        shimmer: {
+          '0%':   { backgroundPosition: '200% 0' },
+          '100%': { backgroundPosition: '-200% 0' },
+        },
+      },
+      transitionTimingFunction: {
+        'out-expo': 'cubic-bezier(0.16, 1, 0.3, 1)',
+        'spring':   'cubic-bezier(0.34, 1.56, 0.64, 1)',
+      },
+      lineHeight: {
+        '11': '1.1',
+        '12': '1.2',
+        '14': '1.4',
+      },
+      letterSpacing: {
+        'tightest': '-0.04em',
+        'tighter':  '-0.03em',
+        'tight':    '-0.02em',
+        'normal':   '0',
+        'wide':     '0.06em',
+        'wider':    '0.12em',
+        'widest':   '0.2em',
+      },
     },
   },
   plugins: [],
-}
+};

@@ -14,7 +14,6 @@ const ForgotPassword = () => {
     try {
       const { data } = await axios.post('/api/auth/forgot-password', { email });
       toast.success(data.message || 'Reset link sent to your email');
-      // For development/demo purposes, alert the token so it can be copied easily
       if (data.resetToken) {
         toast.info(`Dev Notice: Your token is ${data.resetToken}`, { autoClose: false });
       }
@@ -26,40 +25,65 @@ const ForgotPassword = () => {
   };
 
   return (
-    <div className="min-h-screen pt-24 pb-12 flex items-center justify-center bg-sage-50 px-4">
-      <motion.div 
-        initial={{ opacity: 0, scale: 0.95 }}
-        animate={{ opacity: 1, scale: 1 }}
-        className="card w-full max-w-md"
+    <div style={{ minHeight: '100svh', background: 'var(--clr-parchment)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '40px 24px' }}>
+      <motion.div
+        initial={{ opacity: 0, y: 16 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
+        style={{ width: '100%', maxWidth: '400px' }}
       >
-        <div className="flex justify-center mb-6">
-          <img src="/logo.png" alt="Zeal Healing Logo" className="h-20 w-20 object-contain mix-blend-multiply" />
-        </div>
-        <h2 className="text-3xl font-serif font-bold text-center text-darkGreen mb-4">Forgot Password</h2>
-        <p className="text-center text-sage-600 mb-8">
-          Enter your email address and we'll send you a link or token to reset your password.
-        </p>
-        
-        <form onSubmit={handleSubmit} className="space-y-6">
-          <div>
-            <label className="block text-sage-800 font-medium mb-2">Email Address</label>
-            <input 
-              type="email" 
-              className="input-field" 
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              required 
-            />
+        <div style={{
+          background: '#fff',
+          border: '1px solid var(--clr-border)',
+          borderRadius: 'var(--r-xl)',
+          padding: '40px',
+          boxShadow: 'var(--shadow-sm)',
+        }}>
+          {/* Logo */}
+          <div style={{ textAlign: 'center', marginBottom: '28px' }}>
+            <img src="/logo.png" alt="Zeal Healing" style={{ width: 52, height: 52, objectFit: 'contain' }} />
           </div>
-          
-          <button type="submit" className="btn-primary w-full py-3 text-lg" disabled={loading}>
-            {loading ? 'Sending...' : 'Send Reset Link'}
-          </button>
-        </form>
 
-        <p className="mt-8 text-center text-sage-700">
-          Remember your password? <Link to="/login" className="text-darkGreen font-semibold hover:underline">Sign In</Link>
-        </p>
+          <h2 style={{ fontFamily: 'var(--font-display)', fontSize: '1.875rem', fontWeight: 500, color: 'var(--clr-ink)', textAlign: 'center', marginBottom: '8px' }}>
+            Restore Password
+          </h2>
+          <p style={{ fontSize: '0.9375rem', color: 'var(--clr-warm-gray)', textAlign: 'center', lineHeight: 1.6, marginBottom: '28px' }}>
+            Enter your email and we'll send you instructions to reset your password.
+          </p>
+
+          <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+            <div className="field-group">
+              <label className="field-label">Email Address</label>
+              <input
+                type="email"
+                className="input-field"
+                placeholder="you@example.com"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                required
+              />
+            </div>
+
+            <button
+              type="submit"
+              className="btn-primary"
+              style={{ width: '100%', marginTop: '8px', borderRadius: 'var(--r-md)' }}
+              disabled={loading}
+            >
+              {loading ? 'Sending link…' : 'Send Instructions'}
+            </button>
+          </form>
+
+          <p style={{ textAlign: 'center', fontSize: '0.9375rem', color: 'var(--clr-warm-gray)', marginTop: '28px' }}>
+            Remember your credentials?{' '}
+            <Link to="/login" style={{ fontWeight: 600, color: 'var(--clr-forest-700)', transition: 'opacity 180ms ease' }}
+              onMouseEnter={e => e.currentTarget.style.opacity = '0.7'}
+              onMouseLeave={e => e.currentTarget.style.opacity = '1'}
+            >
+              Sign In
+            </Link>
+          </p>
+        </div>
       </motion.div>
     </div>
   );

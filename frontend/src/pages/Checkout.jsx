@@ -3,7 +3,43 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import axios from 'axios';
 import { usePricing } from '../context/PricingContext';
-import { FaCalendarCheck, FaGlobe, FaMapMarkerAlt, FaWhatsapp } from 'react-icons/fa';
+
+const FormField = ({ label, name, type, placeholder, value, onChange, required, error }) => (
+  <div className="field-group" style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+    <label className="field-label" style={{
+      fontFamily: 'var(--font-body)',
+      fontSize: '0.6875rem',
+      fontWeight: 700,
+      letterSpacing: '0.12em',
+      textTransform: 'uppercase',
+      color: 'var(--clr-forest-700)',
+    }}>
+      {label}
+    </label>
+    <input
+      type={type}
+      name={name}
+      className="input-field"
+      placeholder={placeholder}
+      value={value}
+      onChange={onChange}
+      required={required}
+      style={{
+        width: '100%',
+        height: 52,
+        padding: '0 16px',
+        background: '#fff',
+        border: '1.5px solid var(--clr-border-strong)',
+        borderRadius: 'var(--r-md)',
+        fontFamily: 'var(--font-body)',
+        fontSize: '0.9375rem',
+        color: 'var(--clr-ink)',
+        outline: 'none',
+        transition: 'all 200ms ease',
+      }}
+    />
+  </div>
+);
 
 const Checkout = () => {
   const { id } = useParams();
@@ -22,18 +58,13 @@ const Checkout = () => {
     state: '',
     country: country || '',
     countryCategory: countryCategory || 'india',
-    notes: ''
+    notes: '',
   });
 
   useEffect(() => {
-    // Load appointment info from previous step
     const savedInfo = localStorage.getItem('tempAppointment');
-    if (!savedInfo) {
-      navigate(`/book/${id}`);
-      return;
-    }
+    if (!savedInfo) { navigate(`/book/${id}`); return; }
     setAppointmentInfo(JSON.parse(savedInfo));
-
     setFormData(prev => ({ ...prev, country: country || '', countryCategory: countryCategory || 'india' }));
   }, [country, countryCategory, id, navigate]);
 
@@ -45,7 +76,7 @@ const Checkout = () => {
         customerName: userInfo.name || '',
         customerEmail: userInfo.email || '',
         customerPhone: userInfo.phone || '',
-        customerWhatsApp: userInfo.phone || '', // Default WhatsApp to phone
+        customerWhatsApp: userInfo.phone || '',
       }));
     }
 
@@ -54,25 +85,19 @@ const Checkout = () => {
         const { data } = await axios.get(`/api/classes/${id}`);
         setSelectedPkg(data);
         setLoading(false);
-      } catch (error) {
-        console.error('Error fetching class:', error);
+      } catch {
         navigate('/sessions');
       }
     };
     fetchClassDetails();
   }, [id, navigate]);
 
-  const handleChange = (e) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
-  };
+  const handleChange = (e) => setFormData({ ...formData, [e.target.name]: e.target.value });
 
   const handleCategoryToggle = (category) => {
-    // If user manually switches category, we might need to update pricing context
-    const isIndia = category === 'india';
-    if (isIndia) {
+    if (category === 'india') {
       changeCountry('India', 'INR', '₹');
     } else {
-      // Default abroad to USD if manual switch
       changeCountry('United States', 'USD', '$');
     }
     setFormData(prev => ({ ...prev, countryCategory: category }));
@@ -81,26 +106,27 @@ const Checkout = () => {
   const handleSubmit = (e) => {
     e.preventDefault();
     const dynamicPrice = getPrice(selectedPkg.type, selectedPkg.duration, selectedPkg.price);
-    
     const bookingData = {
-      package: {
-        ...selectedPkg,
-        dynamicPrice: dynamicPrice,
-        baseINRAmount: selectedPkg.price
-      },
+      package: { ...selectedPkg, dynamicPrice, baseINRAmount: selectedPkg.price },
       pricingContext: { country, countryCategory: formData.countryCategory, currency, symbol, exchangeRate, gstRate },
       customerDetails: formData,
-      appointment: appointmentInfo
+      appointment: appointmentInfo,
     };
     localStorage.setItem('pendingBooking', JSON.stringify(bookingData));
     navigate('/payment');
   };
 
-  if (loading || !selectedPkg || !appointmentInfo) return <div className="min-h-screen pt-24 pb-12 flex justify-center items-center font-serif text-sage-600">Preparing your checkout...</div>;
+  if (loading || !selectedPkg || !appointmentInfo) {
+    return (
+      <div style={{ minHeight: '100svh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '16px', background: 'var(--clr-parchment)' }}>
+        <div className="spinner" style={{ width: 36, height: 36 }} />
+        <p style={{ fontSize: '0.875rem', color: 'var(--clr-warm-gray)' }}>Preparing your checkout…</p>
+      </div>
+    );
+  }
 
-  const formatDate = (dateStr) => {
-    return new Date(dateStr).toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' });
-  };
+  const formatDate = (dateStr) =>
+    new Date(dateStr).toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' });
 
   const formatTime12h = (time24) => {
     const [h, m] = time24.split(':').map(Number);
@@ -109,156 +135,305 @@ const Checkout = () => {
     return `${String(h12).padStart(2, '0')}:${String(m).padStart(2, '0')} ${ampm}`;
   };
 
+  const basePrice = getPrice(selectedPkg.type, selectedPkg.duration, selectedPkg.price);
+  const isIndia = formData.countryCategory === 'india';
+  const totalPrice = isIndia ? (basePrice * 1.18).toFixed(2) : basePrice;
+
   return (
-    <div className="min-h-screen pt-24 pb-12 bg-sage-50 px-4">
-      <div className="max-w-6xl mx-auto">
-        <div className="flex flex-col lg:flex-row gap-8">
-          
-          {/* Left: Enhanced Form */}
-          <div className="w-full lg:w-2/3">
-            <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="card border-transparent shadow-sm">
-              <div className="flex justify-between items-center mb-8 pb-4 border-b border-sage-100">
-                <h2 className="text-2xl font-serif font-bold text-sage-900">Mandatory Client Information</h2>
-                <div className="flex bg-sage-100 p-1 rounded-lg">
-                  <button 
-                    onClick={() => handleCategoryToggle('india')}
-                    className={`px-4 py-1.5 rounded-md text-xs font-bold transition-all ${formData.countryCategory === 'india' ? 'bg-white text-darkGreen shadow-sm' : 'text-sage-500'}`}
-                  >
-                    India
-                  </button>
-                  <button 
-                    onClick={() => handleCategoryToggle('abroad')}
-                    className={`px-4 py-1.5 rounded-md text-xs font-bold transition-all ${formData.countryCategory === 'abroad' ? 'bg-white text-darkGreen shadow-sm' : 'text-sage-500'}`}
-                  >
-                    Abroad
-                  </button>
+    <div style={{ minHeight: '100svh', background: 'var(--clr-parchment)', paddingTop: 'var(--nav-h)' }}>
+      <div style={{ maxWidth: '1280px', margin: '0 auto', padding: 'var(--space-12) 24px var(--space-20)' }}>
+
+        {/* ── Page Header ── */}
+        <div style={{ marginBottom: '40px' }}>
+          <div className="eyebrow" style={{ marginBottom: '12px' }}>
+            <span style={{ color: 'var(--clr-forest-400)', marginRight: '8px' }}>—</span>
+            Step 3 of 3
+            <span style={{ color: 'var(--clr-forest-400)', marginLeft: '8px' }}>—</span>
+          </div>
+          <h1 style={{ fontFamily: 'var(--font-display)', fontSize: '2.5rem', fontWeight: 500, color: 'var(--clr-ink)', letterSpacing: '-0.02em' }}>
+            Confirm Details
+          </h1>
+        </div>
+
+        {/* ── Layout Grid ── */}
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '32px' }} className="lg:grid-cols-[1fr_400px]">
+
+          {/* ── Left column: Form ── */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+            <motion.div
+              initial={{ opacity: 0, y: 16 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
+              style={{
+                background: '#fff',
+                border: '1px solid var(--clr-border)',
+                borderRadius: 'var(--r-xl)',
+                padding: '40px',
+                boxShadow: 'var(--shadow-sm)',
+              }}
+            >
+              {/* Header & Category Switch */}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '20px', paddingBottom: '24px', borderBottom: '1px solid var(--clr-border)', marginBottom: '32px' }} className="sm:flex-row sm:items-center sm:justify-between">
+                <h2 style={{ fontFamily: 'var(--font-display)', fontSize: '1.625rem', fontWeight: 500, color: 'var(--clr-ink)' }}>
+                  Client Profile
+                </h2>
+
+                <div style={{
+                  display: 'flex',
+                  background: 'var(--clr-forest-50)',
+                  borderRadius: 'var(--r-lg)',
+                  padding: '4px',
+                  gap: '4px',
+                  border: '1px solid var(--clr-border)',
+                }}>
+                  {[
+                    { label: '🇮🇳 India', value: 'india' },
+                    { label: '🌍 Abroad', value: 'abroad' },
+                  ].map(({ label, value }) => (
+                    <button
+                      key={value}
+                      type="button"
+                      onClick={() => handleCategoryToggle(value)}
+                      style={{
+                        padding: '8px 16px',
+                        borderRadius: 'var(--r-md)',
+                        border: 'none',
+                        fontFamily: 'var(--font-body)',
+                        fontSize: '0.75rem',
+                        fontWeight: 700,
+                        cursor: 'pointer',
+                        transition: 'all 200ms ease',
+                        background: formData.countryCategory === value ? '#fff' : 'transparent',
+                        color: formData.countryCategory === value ? 'var(--clr-forest-700)' : 'var(--clr-warm-gray)',
+                        boxShadow: formData.countryCategory === value ? 'var(--shadow-xs)' : 'none',
+                      }}
+                    >
+                      {label}
+                    </button>
+                  ))}
                 </div>
               </div>
-              
-              <form onSubmit={handleSubmit} className="space-y-6">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div>
-                    <label className="block text-sage-800 font-semibold mb-2 text-sm uppercase tracking-wide">Full Name *</label>
-                    <input type="text" name="customerName" required className="input-field bg-white" placeholder="Enter your full name" value={formData.customerName} onChange={handleChange} />
-                  </div>
-                  <div>
-                    <label className="block text-sage-800 font-semibold mb-2 text-sm uppercase tracking-wide">Email Address *</label>
-                    <input type="email" name="customerEmail" required className="input-field bg-white" placeholder="email@example.com" value={formData.customerEmail} onChange={handleChange} />
-                  </div>
+
+              {/* Form elements */}
+              <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '20px' }} className="sm:grid-cols-2">
+                  <FormField
+                    label="Full Name *"
+                    name="customerName"
+                    type="text"
+                    placeholder="Your complete name"
+                    value={formData.customerName}
+                    onChange={handleChange}
+                    required
+                  />
+                  <FormField
+                    label="Email Address *"
+                    name="customerEmail"
+                    type="email"
+                    placeholder="name@example.com"
+                    value={formData.customerEmail}
+                    onChange={handleChange}
+                    required
+                  />
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div>
-                    <label className="block text-sage-800 font-semibold mb-2 text-sm uppercase tracking-wide">Phone Number *</label>
-                    <input type="tel" name="customerPhone" required className="input-field bg-white" placeholder="+91 1234567890" value={formData.customerPhone} onChange={handleChange} />
-                  </div>
-                  <div>
-                    <label className="block text-sage-800 font-semibold mb-2 text-sm uppercase tracking-wide flex items-center gap-2">
-                       WhatsApp Number * <FaWhatsapp className="text-green-500" />
-                    </label>
-                    <input type="tel" name="customerWhatsApp" required className="input-field bg-white" placeholder="International format preferred" value={formData.customerWhatsApp} onChange={handleChange} />
-                  </div>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '20px' }} className="sm:grid-cols-2">
+                  <FormField
+                    label="Phone Number *"
+                    name="customerPhone"
+                    type="tel"
+                    placeholder="+91 98765 43210"
+                    value={formData.customerPhone}
+                    onChange={handleChange}
+                    required
+                  />
+                  <FormField
+                    label="WhatsApp Number *"
+                    name="customerWhatsApp"
+                    type="tel"
+                    placeholder="With international code"
+                    value={formData.customerWhatsApp}
+                    onChange={handleChange}
+                    required
+                  />
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6 pt-4 border-t border-sage-100">
-                  <div>
-                    <label className="block text-sage-800 font-semibold mb-2 text-sm uppercase tracking-wide">District *</label>
-                    <input type="text" name="district" required className="input-field bg-white" placeholder="District/City" value={formData.district} onChange={handleChange} />
-                  </div>
-                  <div>
-                    <label className="block text-sage-800 font-semibold mb-2 text-sm uppercase tracking-wide">State *</label>
-                    <input type="text" name="state" required className="input-field bg-white" placeholder="State/Province" value={formData.state} onChange={handleChange} />
-                  </div>
-                  <div>
-                    <label className="block text-sage-800 font-semibold mb-2 text-sm uppercase tracking-wide">Country *</label>
-                    <input type="text" name="country" required className="input-field bg-white" value={formData.country} onChange={handleChange} />
-                  </div>
+                <div style={{ borderTop: '1px solid var(--clr-border)', paddingTop: '24px', display: 'grid', gridTemplateColumns: '1fr', gap: '20px' }} className="sm:grid-cols-3">
+                  <FormField
+                    label="District / City *"
+                    name="district"
+                    type="text"
+                    placeholder="City or district"
+                    value={formData.district}
+                    onChange={handleChange}
+                    required
+                  />
+                  <FormField
+                    label="State / Province *"
+                    name="state"
+                    type="text"
+                    placeholder="State or region"
+                    value={formData.state}
+                    onChange={handleChange}
+                    required
+                  />
+                  <FormField
+                    label="Country *"
+                    name="country"
+                    type="text"
+                    placeholder="Country"
+                    value={formData.country}
+                    onChange={handleChange}
+                    required
+                  />
                 </div>
 
-                <div className="pt-4">
-                  <label className="block text-sage-800 font-semibold mb-2 text-sm uppercase tracking-wide">Notes or Special Requirements (Optional)</label>
-                  <textarea name="notes" rows="3" className="input-field bg-white" placeholder="Anything our healers should know before the session..." value={formData.notes} onChange={handleChange}></textarea>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                  <label className="field-label" style={{
+                    fontFamily: 'var(--font-body)',
+                    fontSize: '0.6875rem',
+                    fontWeight: 700,
+                    letterSpacing: '0.12em',
+                    textTransform: 'uppercase',
+                    color: 'var(--clr-forest-700)',
+                  }}>
+                    Notes / Intentions
+                  </label>
+                  <textarea
+                    name="notes"
+                    className="input-field"
+                    placeholder="Provide any intentions or background you wish to share with your healer prior to the session…"
+                    value={formData.notes}
+                    onChange={handleChange}
+                    style={{
+                      width: '100%',
+                      minHeight: 120,
+                      padding: '14px 16px',
+                      background: '#fff',
+                      border: '1.5px solid var(--clr-border-strong)',
+                      borderRadius: 'var(--r-md)',
+                      fontFamily: 'var(--font-body)',
+                      fontSize: '0.9375rem',
+                      color: 'var(--clr-ink)',
+                      outline: 'none',
+                      transition: 'all 200ms ease',
+                      resize: 'vertical',
+                      lineHeight: 1.7,
+                    }}
+                  />
                 </div>
 
-                <button type="submit" className="btn-primary w-full py-5 text-xl font-serif font-bold mt-4 shadow-xl shadow-darkGreen/20">
+                <button
+                  type="submit"
+                  className="btn-primary"
+                  style={{ width: '100%', marginTop: '12px', fontSize: '1rem', borderRadius: 'var(--r-md)' }}
+                >
                   Verify & Proceed to Payment
                 </button>
               </form>
             </motion.div>
           </div>
 
-          {/* Right: Premium Summary Sidebar */}
-          <div className="w-full lg:w-1/3">
-            <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} className="card border-transparent shadow-lg bg-white overflow-hidden p-0">
-              <div className="bg-darkGreen p-6 text-white">
-                <h3 className="text-xl font-serif font-bold">Booking Details</h3>
+          {/* ── Right column: Sticky Summary ── */}
+          <div>
+            <motion.div
+              initial={{ opacity: 0, x: 16 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ duration: 0.5, delay: 0.1, ease: [0.16, 1, 0.3, 1] }}
+              style={{
+                background: '#fff',
+                border: '1px solid var(--clr-border)',
+                borderRadius: 'var(--r-xl)',
+                overflow: 'hidden',
+                position: 'sticky',
+                top: 'calc(var(--nav-h) + 24px)',
+                boxShadow: 'var(--shadow-md)',
+              }}
+            >
+              {/* Header */}
+              <div style={{ background: 'var(--clr-forest-900)', padding: '24px 28px' }}>
+                <h3 style={{ fontFamily: 'var(--font-display)', fontSize: '1.25rem', fontWeight: 500, color: '#fff' }}>
+                  Booking Summary
+                </h3>
               </div>
-              <div className="p-6 space-y-6">
-                {/* Appointment Detail Grid */}
-                <div className="space-y-4">
-                  <div className="flex gap-4">
-                    <div className="w-12 h-12 bg-sage-50 rounded-xl flex items-center justify-center text-darkGreen shrink-0">
-                       <FaCalendarCheck size={20} />
-                    </div>
-                    <div>
-                      <p className="text-xs font-bold text-sage-400 uppercase tracking-widest">Date & Time</p>
-                      <p className="text-sage-800 font-semibold text-sm">{formatDate(appointmentInfo.date)}</p>
-                      <p className="text-darkGreen font-bold">{formatTime12h(appointmentInfo.time)}</p>
-                    </div>
-                  </div>
 
-                  <div className="flex gap-4">
-                    <div className="w-12 h-12 bg-sage-50 rounded-xl flex items-center justify-center text-darkGreen shrink-0">
-                       <FaGlobe size={20} />
+              {/* Body */}
+              <div style={{ padding: '28px', display: 'flex', flexDirection: 'column', gap: '24px' }}>
+                {/* Details */}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+                  {[
+                    {
+                      label: 'Date & Time',
+                      main: formatDate(appointmentInfo.date),
+                      sub: formatTime12h(appointmentInfo.time),
+                    },
+                    {
+                      label: 'Session details',
+                      main: `${selectedPkg.type === 'voice' ? '📞 Voice' : '📹 Video'} call`,
+                      sub: `${selectedPkg.duration} Minutes duration`,
+                    },
+                    {
+                      label: 'Pricing Region',
+                      main: formData.countryCategory === 'india' ? '🇮🇳 India Zone' : '🌍 International Zone',
+                    },
+                  ].map((item, i) => (
+                    <div key={i} style={{ display: 'flex', gap: '14px', alignItems: 'flex-start' }}>
+                      <div style={{
+                        width: 38, height: 38,
+                        borderRadius: 'var(--r-md)',
+                        background: 'var(--clr-forest-50)',
+                        border: '1px solid var(--clr-border)',
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        fontSize: '1.05rem',
+                        flexShrink: 0,
+                      }}>
+                        {i === 0 ? '📅' : i === 1 ? '⏱' : '🌍'}
+                      </div>
+                      <div>
+                        <p style={{ fontSize: '0.625rem', fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase', color: 'var(--clr-warm-gray)', marginBottom: '3px' }}>
+                          {item.label}
+                        </p>
+                        <p style={{ fontSize: '0.875rem', fontWeight: 600, color: 'var(--clr-ink)' }}>
+                          {item.main}
+                        </p>
+                        {item.sub && (
+                          <p style={{ fontSize: '0.75rem', color: 'var(--clr-forest-700)', fontWeight: 600, marginTop: '2px' }}>
+                            {item.sub}
+                          </p>
+                        )}
+                      </div>
                     </div>
-                    <div>
-                      <p className="text-xs font-bold text-sage-400 uppercase tracking-widest">Session Type</p>
-                      <p className="text-sage-800 font-semibold text-sm capitalize">{selectedPkg.type} Call Session</p>
-                      <p className="text-sage-500 text-xs font-medium">{selectedPkg.duration} Minutes Duration</p>
-                    </div>
-                  </div>
-
-                  <div className="flex gap-4">
-                    <div className="w-12 h-12 bg-sage-50 rounded-xl flex items-center justify-center text-darkGreen shrink-0">
-                       <FaMapMarkerAlt size={20} />
-                    </div>
-                    <div>
-                      <p className="text-xs font-bold text-sage-400 uppercase tracking-widest">Pricing Zone</p>
-                      <p className="text-sage-800 font-semibold text-sm capitalize">{formData.countryCategory} Configuration</p>
-                    </div>
-                  </div>
+                  ))}
                 </div>
 
-                <div className="border-t border-sage-100 pt-6 space-y-3">
-                  <div className="flex justify-between text-sage-600 text-sm">
-                    <span>Base Fee</span>
-                    <span>{symbol}{getPrice(selectedPkg.type, selectedPkg.duration, selectedPkg.price)}</span>
+                {/* Breakdown */}
+                <div style={{ borderTop: '1px solid var(--clr-border)', paddingTop: '24px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.875rem', color: 'var(--clr-ink-muted)' }}>
+                    <span>Honorarium</span>
+                    <span style={{ fontWeight: 600 }}>{symbol}{basePrice.toLocaleString()}</span>
                   </div>
-                  
-                  {formData.countryCategory === 'india' && (
-                    <div className="flex justify-between text-sage-600 text-sm">
+                  {isIndia && (
+                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.875rem', color: 'var(--clr-ink-muted)' }}>
                       <span>GST (18%)</span>
-                      <span>{symbol}{(getPrice(selectedPkg.type, selectedPkg.duration, selectedPkg.price) * 0.18).toFixed(2)}</span>
+                      <span style={{ fontWeight: 600 }}>{symbol}{(basePrice * 0.18).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
                     </div>
                   )}
-                  
-                  <div className="flex justify-between font-bold text-darkGreen text-2xl pt-4 border-t border-sage-200">
-                    <span>Total</span>
-                    <span>
-                      {symbol}
-                      {(formData.countryCategory === 'india' 
-                        ? (getPrice(selectedPkg.type, selectedPkg.duration, selectedPkg.price) * 1.18)
-                        : getPrice(selectedPkg.type, selectedPkg.duration, selectedPkg.price)
-                      ).toFixed(2)}
+                  <div style={{ borderTop: '1.5px solid var(--clr-border)', paddingTop: '16px', marginTop: '4px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <span style={{ fontSize: '0.875rem', fontWeight: 700, color: 'var(--clr-ink)' }}>Total Payable</span>
+                    <span style={{ fontFamily: 'var(--font-display)', fontSize: '1.875rem', fontWeight: 600, color: 'var(--clr-forest-700)' }}>
+                      {symbol}{Number(totalPrice).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                     </span>
                   </div>
-                  <p className="text-[10px] text-center text-sage-400 italic pt-2">Values converted from INR base prices according to live exchange rates.</p>
+                  <p style={{ fontSize: '0.6875rem', color: 'var(--clr-warm-gray)', textAlign: 'center', lineHeight: 1.5, marginTop: '8px' }}>
+                    Values converted from base INR rates. Support is available for custom invoicing.
+                  </p>
                 </div>
               </div>
             </motion.div>
           </div>
 
         </div>
+
       </div>
     </div>
   );

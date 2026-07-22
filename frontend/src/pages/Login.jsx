@@ -7,6 +7,23 @@ import { useAuth } from '../context/AuthContext';
 import { usePricing } from '../context/PricingContext';
 import { getCurrencyByCountryCode } from '../utils/currencyMap';
 
+const FormField = ({ label, type, placeholder, value, onChange, required, children }) => (
+  <div className="field-group">
+    <label className="field-label">{label}</label>
+    <div style={{ position: 'relative' }}>
+      <input
+        type={type}
+        className="input-field"
+        placeholder={placeholder}
+        value={value}
+        onChange={onChange}
+        required={required}
+      />
+      {children}
+    </div>
+  </div>
+);
+
 const Login = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -20,33 +37,21 @@ const Login = () => {
 
   const from = location.state?.from || '/';
 
-  const getLocation = () => {
-    return new Promise((resolve, reject) => {
-      if (!navigator.geolocation) {
-        reject(new Error("Not supported"));
-      } else {
-        navigator.geolocation.getCurrentPosition(resolve, reject, {
-          timeout: 15000,
-          enableHighAccuracy: true,
-          maximumAge: 0
-        });
-      }
+  const getLocation = () =>
+    new Promise((resolve, reject) => {
+      if (!navigator.geolocation) reject(new Error('Not supported'));
+      else navigator.geolocation.getCurrentPosition(resolve, reject, { timeout: 15000, enableHighAccuracy: true, maximumAge: 0 });
     });
-  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
 
-    let locationPromise = null;
-    if (navigator.geolocation) {
-      locationPromise = getLocation();
-    }
+    let locationPromise = navigator.geolocation ? getLocation() : null;
 
     try {
       const userData = await login(email, password);
 
-      // If admin mode is selected, verify the user is actually an admin
       if (isAdminMode) {
         if (userData.role !== 'admin') {
           toast.error('Access denied. This account does not have admin privileges.');
@@ -57,174 +62,307 @@ const Login = () => {
         navigate('/admin', { replace: true });
         return;
       }
-      
-      // For regular users, never redirect to admin routes
+
       const userRedirect = from.startsWith('/admin') ? '/' : from;
 
-      // Normal user login with location detection
       if (locationPromise) {
-        toast.info('Please select an option on the location popup...', { autoClose: false, toastId: 'geo-toast' });
         try {
           const position = await locationPromise;
           const { latitude, longitude } = position.coords;
-          
-          toast.info('Location received! Fetching local pricing...', { toastId: 'geo-toast' });
           const res = await axios.get(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}`);
-          
-          if (res.data && res.data.address && res.data.address.country_code) {
+          if (res.data?.address?.country_code) {
             const countryCode = res.data.address.country_code.toUpperCase();
             const countryName = res.data.address.country;
             const { currency, symbol } = getCurrencyByCountryCode(countryCode);
-            
             changeCountry(countryName, currency, symbol);
-            toast.success(`Pricing updated to ${currency}!`);
-          } else {
-            throw new Error("Invalid geocode data");
           }
-        } catch (err) {
-          console.error('Location denied/failed, attempting Frontend IP Fallback', err);
+        } catch {
           try {
             const ipRes = await axios.get('https://ipapi.co/json/');
-            if (ipRes.data && ipRes.data.country_code) {
-              const countryCode = ipRes.data.country_code.toUpperCase();
-              const countryName = ipRes.data.country_name;
-              const { currency, symbol } = getCurrencyByCountryCode(countryCode);
-              changeCountry(countryName, currency, symbol);
-              toast.success(`Pricing updated to ${currency} (via VPN/IP detection)!`);
+            if (ipRes.data?.country_code) {
+              const { currency, symbol } = getCurrencyByCountryCode(ipRes.data.country_code.toUpperCase());
+              changeCountry(ipRes.data.country_name, currency, symbol);
             }
-          } catch (ipErr) {
-            toast.success('Logged in! (Default location used)');
-          }
-        } finally {
-          toast.dismiss('geo-toast');
-          navigate(userRedirect, { replace: true });
+          } catch (_) { /* use defaults */ }
         }
-      } else {
-        toast.success('Logged in successfully!');
-        navigate(userRedirect, { replace: true });
       }
-      
+      toast.success('Welcome back!');
+      navigate(userRedirect, { replace: true });
     } catch (error) {
-      toast.error(error.response?.data?.message || 'Login failed');
+      toast.error(error.response?.data?.message || 'Login failed. Please check your credentials.');
       setLoading(false);
     }
   };
 
-  const toggleMode = () => {
-    setIsAdminMode(!isAdminMode);
-    setEmail('');
-    setPassword('');
-  };
+  const toggleMode = () => { setIsAdminMode(p => !p); setEmail(''); setPassword(''); };
 
   return (
-    <div className="min-h-screen pt-24 pb-12 flex items-center justify-center bg-sage-50 px-4">
-      <motion.div 
-        initial={{ opacity: 0, scale: 0.95 }}
-        animate={{ opacity: 1, scale: 1 }}
-        className="card w-full max-w-md"
+    <div style={{
+      minHeight: '100svh',
+      background: 'var(--clr-parchment)',
+      display: 'flex',
+      alignItems: 'stretch',
+    }}>
+      {/* ── Left: Decorative Panel ── */}
+      <div
+        className="hidden lg:flex"
+        style={{
+          width: '45%',
+          flexShrink: 0,
+          position: 'relative',
+          background: 'var(--clr-forest-900)',
+          flexDirection: 'column',
+          justifyContent: 'flex-end',
+          padding: '60px',
+          overflow: 'hidden',
+        }}
       >
-        <div className="flex justify-center mb-6">
-          <img src="/logo.png" alt="Zeal Healing Logo" className="h-20 w-20 object-contain mix-blend-multiply" />
-        </div>
-
-        {/* Login Mode Toggle */}
-        <div className="flex rounded-xl overflow-hidden mb-6 border-2 border-sage-200">
-          <button
-            type="button"
-            id="userModeToggle"
-            onClick={() => { if (isAdminMode) toggleMode(); }}
-            className={`flex-1 py-2.5 text-sm font-semibold transition-all duration-300 ${
-              !isAdminMode
-                ? 'bg-darkGreen text-white shadow-md'
-                : 'bg-white text-sage-600 hover:bg-sage-50'
-            }`}
-          >
-            👤 User Login
-          </button>
-          <button
-            type="button"
-            id="adminModeToggle"
-            onClick={() => { if (!isAdminMode) toggleMode(); }}
-            className={`flex-1 py-2.5 text-sm font-semibold transition-all duration-300 ${
-              isAdminMode
-                ? 'bg-darkGreen text-white shadow-md'
-                : 'bg-white text-sage-600 hover:bg-sage-50'
-            }`}
-          >
-            🛡️ Admin Login
-          </button>
-        </div>
-
-        <motion.h2
-          key={isAdminMode ? 'admin' : 'user'}
-          initial={{ opacity: 0, y: -10 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="text-3xl font-serif font-bold text-center text-darkGreen mb-8"
-        >
-          {isAdminMode ? 'Admin Portal' : 'Welcome Back'}
-        </motion.h2>
-        
-        <form id="loginForm" onSubmit={handleSubmit} className="space-y-6">
-          <div>
-            <label className="block text-sage-800 font-medium mb-2">
-              {isAdminMode ? 'Admin Email' : 'Email Address'}
-            </label>
-            <input 
-              type="email" 
-              className="input-field" 
-              placeholder={isAdminMode ? 'Enter admin email' : 'Enter your email'}
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              required 
-            />
-          </div>
-          <div>
-            <label className="block text-sage-800 font-medium mb-2">Password</label>
-            <div className="relative">
-              <input 
-                type={showPassword ? 'text' : 'password'} 
-                className="input-field w-full pr-10" 
-                placeholder="Enter your password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                required 
-              />
-              <button
-                type="button"
-                className="absolute inset-y-0 right-0 pr-3 flex items-center text-sm text-sage-600 hover:text-darkGreen"
-                onClick={() => setShowPassword(!showPassword)}
-              >
-                {showPassword ? 'Hide' : 'Show'}
-              </button>
+        <img
+          src="/hero-bg.png"
+          alt=""
+          aria-hidden="true"
+          style={{
+            position: 'absolute', inset: 0,
+            width: '100%', height: '100%',
+            objectFit: 'cover',
+            opacity: 0.25,
+          }}
+        />
+        <div style={{
+          position: 'absolute', inset: 0,
+          background: 'linear-gradient(180deg, rgba(13,26,14,0.4) 0%, rgba(13,26,14,0.92) 100%)',
+        }} />
+        <div style={{ position: 'relative', zIndex: 1 }}>
+          <Link to="/" style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '60px' }}>
+            <div style={{ width: 36, height: 36, borderRadius: '50%', overflow: 'hidden', background: 'rgba(255,255,255,0.1)', border: '1px solid rgba(255,255,255,0.15)', flexShrink: 0 }}>
+              <img src="/logo.png" alt="Zeal Healing" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
             </div>
+            <span style={{ fontFamily: 'var(--font-display)', fontSize: '1.125rem', fontWeight: 600, color: '#fff', letterSpacing: '-0.01em' }}>
+              Zeal Healing
+            </span>
+          </Link>
+
+          <blockquote style={{ marginBottom: '32px' }}>
+            <p style={{
+              fontFamily: 'var(--font-display)',
+              fontSize: 'clamp(1.75rem, 2.5vw, 2.5rem)',
+              fontWeight: 400,
+              lineHeight: 1.15,
+              letterSpacing: '-0.02em',
+              color: '#fff',
+              fontStyle: 'italic',
+              marginBottom: '20px',
+            }}>
+              "The soul always knows the way — we only need to quiet the mind to hear its wisdom."
+            </p>
+            <footer style={{ fontSize: '0.875rem', color: 'rgba(255,255,255,0.5)', fontStyle: 'normal' }}>
+              — Baghya Ashok, Founder
+            </footer>
+          </blockquote>
+
+          <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
+            {['Reiki Grand Master', 'Tarot Expert', 'Bach Flower Certified'].map(badge => (
+              <span key={badge} style={{
+                padding: '6px 14px',
+                borderRadius: '99px',
+                background: 'rgba(255,255,255,0.08)',
+                border: '1px solid rgba(255,255,255,0.12)',
+                fontSize: '0.75rem',
+                fontWeight: 600,
+                color: 'rgba(255,255,255,0.7)',
+                letterSpacing: '0.04em',
+              }}>
+                {badge}
+              </span>
+            ))}
           </div>
-          
-          <div className="flex items-center justify-between text-sm">
-            <label className="flex items-center text-sage-700">
-              <input type="checkbox" className="mr-2 rounded text-darkGreen focus:ring-darkGreen" />
-              Remember Me
-            </label>
-            {!isAdminMode && (
-              <Link to="/forgot-password" className="text-darkGreen hover:underline">Forgot Password?</Link>
+        </div>
+      </div>
+
+      {/* ── Right: Form Panel ── */}
+      <div style={{
+        flex: 1,
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        padding: '40px 24px',
+        minHeight: '100svh',
+      }}>
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
+          style={{ width: '100%', maxWidth: '400px' }}
+        >
+          {/* Mobile logo */}
+          <div className="lg:hidden" style={{ textAlign: 'center', marginBottom: '36px' }}>
+            <img src="/logo.png" alt="Zeal Healing" style={{ width: 52, height: 52, objectFit: 'contain', margin: '0 auto' }} />
+          </div>
+
+          {/* Mode Toggle */}
+          <div style={{
+            display: 'flex',
+            background: 'var(--clr-forest-50)',
+            borderRadius: 'var(--r-lg)',
+            padding: '4px',
+            gap: '4px',
+            marginBottom: '32px',
+            border: '1px solid var(--clr-border)',
+          }}>
+            {[
+              { label: 'User Login', value: false },
+              { label: 'Admin Portal', value: true },
+            ].map(({ label, value }) => (
+              <button
+                key={label}
+                type="button"
+                id={`${label.toLowerCase().replace(' ', '-')}-toggle`}
+                onClick={() => { if (isAdminMode !== value) toggleMode(); }}
+                style={{
+                  flex: 1,
+                  height: 38,
+                  borderRadius: 'var(--r-md)',
+                  border: 'none',
+                  fontFamily: 'var(--font-body)',
+                  fontSize: '0.8125rem',
+                  fontWeight: 600,
+                  cursor: 'pointer',
+                  transition: 'all 200ms ease',
+                  background: isAdminMode === value ? '#fff' : 'transparent',
+                  color: isAdminMode === value ? 'var(--clr-forest-700)' : 'var(--clr-warm-gray)',
+                  boxShadow: isAdminMode === value ? 'var(--shadow-xs)' : 'none',
+                }}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+
+          {/* Heading */}
+          <motion.div
+            key={isAdminMode ? 'admin' : 'user'}
+            initial={{ opacity: 0, y: -8 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.2 }}
+            style={{ marginBottom: '32px' }}
+          >
+            <h1 style={{
+              fontFamily: 'var(--font-display)',
+              fontSize: '2.25rem',
+              fontWeight: 500,
+              letterSpacing: '-0.025em',
+              color: 'var(--clr-ink)',
+              marginBottom: '6px',
+              lineHeight: 1.1,
+            }}>
+              {isAdminMode ? 'Admin Access' : 'Welcome back'}
+            </h1>
+            <p style={{ fontSize: '1rem', color: 'var(--clr-warm-gray)', lineHeight: 1.6 }}>
+              {isAdminMode ? 'Restricted to authorized personnel only.' : 'Sign in to continue your journey.'}
+            </p>
+          </motion.div>
+
+          {/* Form */}
+          <form id="loginForm" onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+            <FormField
+              label={isAdminMode ? 'Admin Email' : 'Email Address'}
+              type="email"
+              placeholder={isAdminMode ? 'admin@zealhealing.com' : 'you@example.com'}
+              value={email}
+              onChange={e => setEmail(e.target.value)}
+              required
+            />
+
+            <div className="field-group">
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <label className="field-label">Password</label>
+                {!isAdminMode && (
+                  <Link
+                    to="/forgot-password"
+                    style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--clr-forest-700)', transition: 'opacity 180ms ease' }}
+                    onMouseEnter={e => e.currentTarget.style.opacity = '0.7'}
+                    onMouseLeave={e => e.currentTarget.style.opacity = '1'}
+                  >
+                    Forgot?
+                  </Link>
+                )}
+              </div>
+              <div style={{ position: 'relative' }}>
+                <input
+                  type={showPassword ? 'text' : 'password'}
+                  className="input-field"
+                  placeholder="Your password"
+                  value={password}
+                  onChange={e => setPassword(e.target.value)}
+                  required
+                  style={{ paddingRight: '60px' }}
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(s => !s)}
+                  style={{
+                    position: 'absolute',
+                    right: 0, top: 0, bottom: 0,
+                    padding: '0 16px',
+                    background: 'none', border: 'none',
+                    fontFamily: 'var(--font-mono)',
+                    fontSize: '0.625rem',
+                    fontWeight: 500,
+                    color: 'var(--clr-warm-gray)',
+                    cursor: 'pointer',
+                    letterSpacing: '0.06em',
+                    transition: 'color 150ms ease',
+                  }}
+                  onMouseEnter={e => e.currentTarget.style.color = 'var(--clr-forest-700)'}
+                  onMouseLeave={e => e.currentTarget.style.color = 'var(--clr-warm-gray)'}
+                >
+                  {showPassword ? 'HIDE' : 'SHOW'}
+                </button>
+              </div>
+            </div>
+
+            <button
+              type="submit"
+              className="btn-primary"
+              style={{ width: '100%', marginTop: '8px', fontSize: '1rem', borderRadius: 'var(--r-md)', opacity: loading ? 0.7 : 1 }}
+              disabled={loading}
+            >
+              {loading
+                ? <span style={{ display: 'flex', alignItems: 'center', gap: '10px', justifyContent: 'center' }}>
+                    <span className="spinner" style={{ width: 18, height: 18, borderWidth: 1.5 }} />
+                    Authenticating…
+                  </span>
+                : isAdminMode ? 'Sign in as Admin' : 'Sign In'
+              }
+            </button>
+          </form>
+
+          {/* Footer Links */}
+          <div style={{ marginTop: '28px', textAlign: 'center' }}>
+            {!isAdminMode ? (
+              <p style={{ fontSize: '0.9375rem', color: 'var(--clr-warm-gray)' }}>
+                Don't have an account?{' '}
+                <Link
+                  to="/register"
+                  style={{ fontWeight: 600, color: 'var(--clr-forest-700)', transition: 'opacity 180ms ease' }}
+                  onMouseEnter={e => e.currentTarget.style.opacity = '0.7'}
+                  onMouseLeave={e => e.currentTarget.style.opacity = '1'}
+                >
+                  Register free
+                </Link>
+              </p>
+            ) : (
+              <p style={{ fontSize: '0.8125rem', color: 'var(--clr-warm-gray)', lineHeight: 1.6 }}>
+                Admin access is monitored and restricted to Zeal Healing staff only.
+              </p>
             )}
           </div>
 
-          <button type="submit" className="btn-primary w-full py-3 text-lg" disabled={loading}>
-            {loading ? 'Authenticating...' : (isAdminMode ? '🛡️ Sign In as Admin' : 'Sign In')}
-          </button>
-        </form>
-
-        {!isAdminMode && (
-          <p className="mt-8 text-center text-sage-700">
-            Don't have an account? <Link to="/register" className="text-darkGreen font-semibold hover:underline">Register</Link>
+          <p style={{ textAlign: 'center', fontSize: '0.75rem', color: 'rgba(140,136,128,0.5)', marginTop: '40px' }}>
+            © {new Date().getFullYear()} Zeal Healing
           </p>
-        )}
-        {isAdminMode && (
-          <p className="mt-8 text-center text-sage-500 text-sm">
-            Admin access is restricted to authorized personnel only.
-          </p>
-        )}
-      </motion.div>
+        </motion.div>
+      </div>
     </div>
   );
 };

@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react';
 import axios from 'axios';
 import { motion } from 'framer-motion';
-import { FaCalendarAlt, FaClock, FaVideo, FaPhone, FaCheckCircle, FaHourglassHalf, FaTimesCircle, FaDownload, FaEye, FaTimes } from 'react-icons/fa';
 import { useAuth } from '../context/AuthContext';
 import { toast } from 'react-toastify';
 
@@ -56,131 +55,268 @@ const MyBookings = () => {
   };
 
   const getStatusBadge = (status) => {
+    let styles = {
+      padding: '4px 12px',
+      borderRadius: '99px',
+      fontSize: '0.625rem',
+      fontWeight: 700,
+      letterSpacing: '0.08em',
+      textTransform: 'uppercase',
+      display: 'inline-flex',
+      alignItems: 'center',
+      border: '1px solid',
+    };
+
     switch (status) {
-      case 'Queued': return <span className="px-3 py-1 bg-amber-50 text-amber-600 border border-amber-100 rounded-full text-[10px] font-bold uppercase tracking-widest flex items-center gap-1.5"><FaHourglassHalf size={10} /> Pending</span>;
-      case 'Accepted': return <span className="px-3 py-1 bg-darkGreen/10 text-darkGreen border border-darkGreen/20 rounded-full text-[10px] font-bold uppercase tracking-widest flex items-center gap-1.5"><FaCheckCircle size={10} /> Confirmed</span>;
-      case 'Completed': return <span className="px-3 py-1 bg-emerald-50 text-emerald-600 border border-emerald-100 rounded-full text-[10px] font-bold uppercase tracking-widest flex items-center gap-1.5"><FaCheckCircle size={10} /> Completed</span>;
+      case 'Queued':
+        return <span style={{ ...styles, background: '#fffbeb', color: '#b45309', borderColor: '#fde68a' }}>⏳ Pending</span>;
+      case 'Accepted':
+        return <span style={{ ...styles, background: 'var(--clr-forest-50)', color: 'var(--clr-forest-700)', borderColor: 'var(--clr-border)' }}>✓ Confirmed</span>;
+      case 'Completed':
+        return <span style={{ ...styles, background: '#e8f5e9', color: '#2e7d32', borderColor: '#a5d6a7' }}>✓ Completed</span>;
       case 'Rejected': 
-      case 'Cancelled': return <span className="px-3 py-1 bg-rose-50 text-rose-600 border border-rose-100 rounded-full text-[10px] font-bold uppercase tracking-widest flex items-center gap-1.5"><FaTimesCircle size={10} /> {status}</span>;
-      default: return <span className="px-3 py-1 bg-sage-50 text-sage-600 border border-sage-100 rounded-full text-[10px] font-bold uppercase tracking-widest">{status}</span>;
+      case 'Cancelled':
+        return <span style={{ ...styles, background: '#fef2f2', color: '#b91c1c', borderColor: '#fca5a5' }}>✕ {status}</span>;
+      default:
+        return <span style={{ ...styles, background: 'var(--clr-forest-50)', color: 'var(--clr-warm-gray)', borderColor: 'var(--clr-border)' }}>{status}</span>;
     }
   };
 
-  if (loading) return (
-    <div className="min-h-screen flex items-center justify-center bg-sage-50">
-      <div className="flex flex-col items-center gap-4">
-        <div className="w-12 h-12 border-4 border-darkGreen border-t-transparent rounded-full animate-spin" />
-        <p className="font-serif italic text-darkGreen">Fetching your spiritual sessions...</p>
+  if (loading) {
+    return (
+      <div style={{ minHeight: '100svh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--clr-parchment)' }}>
+        <div className="spinner" style={{ width: 36, height: 36 }} />
       </div>
-    </div>
-  );
+    );
+  }
 
   return (
-    <div className="min-h-screen bg-sage-50 pt-28 pb-20 px-4 sm:px-6 lg:px-8 flex flex-col">
-      <div className="max-w-7xl mx-auto w-full flex-1">
+    <div style={{ minHeight: '100svh', background: 'var(--clr-parchment)', paddingTop: 'var(--nav-h)', paddingBottom: '80px' }}>
+      <div style={{ maxWidth: '1280px', margin: '0 auto', padding: 'var(--space-12) 24px' }}>
         
-        <div className="mb-12 text-center">
-          <h1 className="text-4xl font-serif font-bold text-sage-900 mb-3 tracking-tight">My Spiritual Journeys</h1>
-          <p className="text-sage-500 font-medium">History of your booked tarot sessions and classes</p>
-          <div className="w-16 h-1 bg-gold mx-auto mt-6 rounded-full" />
+        {/* Header */}
+        <div style={{ textAlign: 'center', marginBottom: '60px' }}>
+          <h1 style={{ fontFamily: 'var(--font-display)', fontSize: '2.75rem', fontWeight: 500, color: 'var(--clr-ink)', letterSpacing: '-0.02em', marginBottom: '8px' }}>
+            Spiritual Ledger
+          </h1>
+          <p style={{ fontSize: '0.9375rem', color: 'var(--clr-warm-gray)' }}>A chronological log of your tarot consults and energy healings.</p>
         </div>
 
         {bookings.length === 0 ? (
-          <motion.div 
-            initial={{ opacity: 0, y: 20 }}
+          <motion.div
+            initial={{ opacity: 0, y: 16 }}
             animate={{ opacity: 1, y: 0 }}
-            className="bg-white rounded-3xl p-16 text-center shadow-sm border border-sage-200 mt-6 max-w-2xl mx-auto"
+            style={{
+              background: '#fff',
+              border: '1px solid var(--clr-border)',
+              borderRadius: 'var(--r-xl)',
+              padding: '60px 40px',
+              textAlign: 'center',
+              maxWidth: '600px',
+              margin: '40px auto 0',
+              boxShadow: 'var(--shadow-sm)',
+            }}
           >
-            <div className="w-20 h-20 bg-sage-50 rounded-full flex items-center justify-center mx-auto mb-6 text-darkGreen">
-              <FaCalendarAlt size={32} />
+            <div style={{
+              width: 64, height: 64,
+              borderRadius: 'var(--r-lg)',
+              background: 'var(--clr-forest-50)',
+              border: '1px solid var(--clr-border)',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              fontSize: '1.75rem',
+              margin: '0 auto 24px',
+            }}>
+              📅
             </div>
-            <h2 className="text-3xl font-serif font-bold text-sage-900 mb-4">No sessions found</h2>
-            <p className="text-sage-500 mb-8 max-w-md mx-auto">Your journey is just beginning. Book your first session to see it appear here in your spiritual records.</p>
-            <a href="/packages" className="bg-darkGreen text-white px-8 py-3 rounded-xl font-bold hover:bg-[#1a3826] transition-colors inline-block shadow-sm">Reserve Your Spot</a>
+            <h3 style={{ fontFamily: 'var(--font-display)', fontSize: '1.625rem', fontWeight: 500, color: 'var(--clr-ink)', marginBottom: '12px' }}>
+              No Bookings Found
+            </h3>
+            <p style={{ fontSize: '0.9375rem', color: 'var(--clr-warm-gray)', lineHeight: 1.6, marginBottom: '32px' }}>
+              Your space is blank. Journey to our selection and secure your consult to begin details here.
+            </p>
+            <a href="/sessions" className="btn-primary" style={{ display: 'inline-flex', borderRadius: 'var(--r-md)' }}>
+              Reserve Your Session
+            </a>
           </motion.div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: '24px' }}>
             {bookings.map((booking, idx) => (
               <motion.div
                 key={booking._id}
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: idx * 0.05 }}
-                className="bg-white rounded-3xl shadow-sm border border-sage-200 overflow-hidden group hover:shadow-xl hover:shadow-darkGreen/10 transition-all duration-300 flex flex-col relative"
+                transition={{ delay: idx * 0.05, duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
+                style={{
+                  background: '#fff',
+                  border: '1px solid var(--clr-border)',
+                  borderRadius: 'var(--r-xl)',
+                  overflow: 'hidden',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  boxShadow: 'var(--shadow-sm)',
+                  transition: 'all 280ms ease',
+                }}
+                onMouseEnter={e => {
+                  e.currentTarget.style.transform = 'translateY(-4px)';
+                  e.currentTarget.style.borderColor = 'var(--clr-border-strong)';
+                  e.currentTarget.style.boxShadow = 'var(--shadow-md)';
+                }}
+                onMouseLeave={e => {
+                  e.currentTarget.style.transform = 'translateY(0)';
+                  e.currentTarget.style.borderColor = 'var(--clr-border)';
+                  e.currentTarget.style.boxShadow = 'var(--shadow-sm)';
+                }}
               >
-                <div className="h-2 w-full bg-sage-200 group-hover:bg-darkGreen transition-colors" />
-                
-                <div className="p-8 flex flex-col flex-1">
-                  <div className="flex flex-wrap gap-2 mb-6">
+                {/* Visual marker ribbon */}
+                <div style={{ height: '4px', background: 'var(--clr-border-strong)' }} />
+
+                <div style={{ padding: '32px', display: 'flex', flexDirection: 'column', flexGrow: 1 }}>
+                  
+                  {/* Badges */}
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginBottom: '24px' }}>
                     {getStatusBadge(booking.bookingStatus)}
-                    <span className={`px-3 py-1 rounded-full border ${booking.callType === 'Video Call' ? 'bg-blue-50 text-blue-600 border-blue-100' : 'bg-emerald-50 text-emerald-600 border-emerald-100'} text-[10px] font-bold uppercase tracking-widest flex items-center gap-1.5`}>
-                      {booking.callType === 'Video Call' ? <FaVideo size={10} /> : <FaPhone size={10} />}
-                      {booking.callType}
+                    <span style={{
+                      padding: '4px 12px',
+                      borderRadius: '99px',
+                      fontSize: '0.625rem',
+                      fontWeight: 700,
+                      letterSpacing: '0.08em',
+                      textTransform: 'uppercase',
+                      background: booking.callType === 'Video Call' ? '#eff6ff' : '#ecfdf5',
+                      color: booking.callType === 'Video Call' ? '#2563eb' : '#059669',
+                      border: '1px solid',
+                      borderColor: booking.callType === 'Video Call' ? '#bfdbfe' : '#a7f3d0',
+                    }}>
+                      {booking.callType === 'Video Call' ? '📹 Video' : '📞 Voice'}
                     </span>
                   </div>
-                  
-                  <h3 className="text-2xl font-serif font-bold text-sage-900 mb-2 leading-tight group-hover:text-darkGreen transition-colors">
+
+                  <h3 style={{
+                    fontFamily: 'var(--font-display)',
+                    fontSize: '1.5rem',
+                    fontWeight: 500,
+                    color: 'var(--clr-ink)',
+                    lineHeight: 1.25,
+                    marginBottom: '24px',
+                  }}>
                     {booking.appointmentType}
                   </h3>
-                  
-                  <div className="flex flex-col gap-4 my-8">
-                    <div className="flex items-center gap-4 text-sage-700 font-medium text-sm">
-                      <div className="w-10 h-10 rounded-full bg-sage-50 flex items-center justify-center text-darkGreen shrink-0 border border-sage-100">
-                        <FaCalendarAlt size={16} />
-                      </div>
-                      {new Date(booking.appointmentDate).toLocaleDateString(undefined, { dateStyle: 'long' })}
+
+                  {/* Dates & duration */}
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', marginBottom: '32px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px', fontSize: '0.875rem', color: 'var(--clr-ink-muted)' }}>
+                      <span style={{ fontSize: '1.1rem' }}>📅</span>
+                      <span>{new Date(booking.appointmentDate).toLocaleDateString(undefined, { dateStyle: 'long' })}</span>
                     </div>
-                    <div className="flex items-center gap-4 text-sage-700 font-medium text-sm">
-                      <div className="w-10 h-10 rounded-full bg-sage-50 flex items-center justify-center text-darkGreen shrink-0 border border-sage-100">
-                        <FaClock size={16} />
-                      </div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px', fontSize: '0.875rem', color: 'var(--clr-ink-muted)' }}>
+                      <span style={{ fontSize: '1.1rem' }}>⏱</span>
                       <span>
-                        {booking.appointmentTime} <span className="text-sage-400 font-normal">({booking.duration} minutes)</span>
+                        {booking.appointmentTime} <span style={{ color: 'var(--clr-warm-gray)', fontWeight: 400 }}>({booking.duration} mins)</span>
                       </span>
                     </div>
                   </div>
 
-                  <div className="mt-auto">
-                    <div className="bg-sage-50/70 rounded-2xl p-5 border border-sage-100 flex items-center justify-between mb-6 group-hover:border-sage-200 transition-colors">
+                  {/* Pricing row & Zoom link */}
+                  <div style={{ marginTop: 'auto' }}>
+                    <div style={{
+                      background: 'var(--clr-forest-50)',
+                      borderRadius: 'var(--r-lg)',
+                      padding: '16px 20px',
+                      border: '1px solid var(--clr-border)',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      marginBottom: '24px',
+                    }}>
                       <div>
-                        <p className="text-[10px] font-bold text-sage-500 uppercase tracking-widest mb-1">Session Value</p>
-                        <p className="text-2xl font-serif font-bold text-darkGreen">
+                        <p style={{ fontSize: '0.625rem', fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase', color: 'var(--clr-warm-gray)', marginBottom: '3px' }}>Session Fee</p>
+                        <p style={{ fontFamily: 'var(--font-display)', fontSize: '1.5rem', fontWeight: 600, color: 'var(--clr-forest-700)', lineHeight: 1 }}>
                           {booking.currencySymbol || '₹'}{(booking.totalAmount || booking.convertedAmount || booking.price).toLocaleString()}
                         </p>
                       </div>
-                      
+
                       {booking.zoomMeetingLink && booking.bookingStatus === 'Accepted' && (
                         <a 
                           href={booking.zoomMeetingLink} 
                           target="_blank" 
                           rel="noopener noreferrer"
-                          className="w-12 h-12 bg-darkGreen text-white rounded-full flex items-center justify-center hover:bg-[#1a3826] transition-transform hover:scale-105 active:scale-95 shadow-md flex-shrink-0"
+                          style={{
+                            width: 44, height: 44,
+                            borderRadius: '50%',
+                            background: 'var(--clr-forest-700)',
+                            color: '#fff',
+                            display: 'flex', alignItems: 'center', justifyContent: 'center',
+                            boxShadow: 'var(--shadow-xs)',
+                            fontSize: '1rem',
+                            transition: 'all 200ms ease',
+                          }}
+                          onMouseEnter={e => e.currentTarget.style.background = 'var(--clr-forest-800)'}
+                          onMouseLeave={e => e.currentTarget.style.background = 'var(--clr-forest-700)'}
                           title="Join Zoom Meeting"
                         >
-                          <FaVideo size={16} />
+                          📹
                         </a>
                       )}
                     </div>
 
-                    <div className="flex gap-3">
+                    {/* Actions */}
+                    <div style={{ display: 'flex', gap: '10px' }}>
                       {['Accepted', 'Completed'].includes(booking.bookingStatus) ? (
                         <>
                           <button 
                             onClick={() => downloadInvoice(booking._id, booking.bookingStatus, 'view')} 
-                            className="flex-1 py-3.5 bg-white text-sage-700 border border-sage-200 rounded-xl hover:bg-sage-50 hover:border-sage-300 transition-all font-bold text-[11px] uppercase tracking-widest flex items-center justify-center gap-2 shadow-sm"
+                            style={{
+                              flex: 1, height: 42,
+                              background: '#fff',
+                              border: '1.5px solid var(--clr-border-strong)',
+                              borderRadius: 'var(--r-md)',
+                              fontFamily: 'var(--font-body)',
+                              fontSize: '0.75rem', fontWeight: 700,
+                              letterSpacing: '0.08em', textTransform: 'uppercase',
+                              cursor: 'pointer',
+                              color: 'var(--clr-forest-700)',
+                              transition: 'all 180ms ease',
+                            }}
+                            onMouseEnter={e => e.currentTarget.style.background = 'var(--clr-forest-50)'}
+                            onMouseLeave={e => e.currentTarget.style.background = '#fff'}
                           >
-                            <FaEye size={14} /> View
+                            👁 View
                           </button>
                           <button 
                             onClick={() => downloadInvoice(booking._id, booking.bookingStatus, 'download')} 
-                            className="flex-1 py-3.5 bg-white text-sage-700 border border-sage-200 rounded-xl hover:bg-sage-50 hover:border-sage-300 transition-all font-bold text-[11px] uppercase tracking-widest flex items-center justify-center gap-2 shadow-sm" 
+                            style={{
+                              flex: 1, height: 42,
+                              background: '#fff',
+                              border: '1.5px solid var(--clr-border-strong)',
+                              borderRadius: 'var(--r-md)',
+                              fontFamily: 'var(--font-body)',
+                              fontSize: '0.75rem', fontWeight: 700,
+                              letterSpacing: '0.08em', textTransform: 'uppercase',
+                              cursor: 'pointer',
+                              color: 'var(--clr-forest-700)',
+                              transition: 'all 180ms ease',
+                            }}
+                            onMouseEnter={e => e.currentTarget.style.background = 'var(--clr-forest-50)'}
+                            onMouseLeave={e => e.currentTarget.style.background = '#fff'}
                           >
-                            <FaDownload size={14} /> Save
+                            📥 Save
                           </button>
                         </>
                       ) : (
-                        <div className="w-full text-center py-3.5 text-[11px] font-bold text-sage-400 uppercase tracking-widest border border-dashed border-sage-200 rounded-xl bg-white/50">
-                          Invoice Pending
+                        <div style={{
+                          width: '100%',
+                          textAlign: 'center',
+                          padding: '12px 0',
+                          fontSize: '0.75rem',
+                          fontWeight: 700,
+                          letterSpacing: '0.08em',
+                          textTransform: 'uppercase',
+                          border: '1.5px dashed var(--clr-border-strong)',
+                          borderRadius: 'var(--r-md)',
+                          color: 'var(--clr-warm-gray)',
+                          background: 'rgba(0,0,0,0.02)',
+                        }}>
+                          Invoice Unavailable
                         </div>
                       )}
                     </div>
@@ -194,25 +330,83 @@ const MyBookings = () => {
 
       {/* Invoice Viewer Modal */}
       {viewingInvoice && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 sm:p-6 md:p-10">
-          <div className="absolute inset-0 bg-sage-900/60 backdrop-blur-sm" onClick={() => setViewingInvoice(null)} />
-          <div className="relative w-full max-w-4xl h-[85vh] bg-white rounded-2xl shadow-2xl overflow-hidden flex flex-col border border-sage-200">
-            <div className="p-5 border-b border-sage-100 flex justify-between items-center bg-white z-10">
+        <div style={{
+          position: 'fixed',
+          inset: 0,
+          zIndex: 100,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          padding: '24px',
+        }}>
+          <div
+            onClick={() => setViewingInvoice(null)}
+            style={{
+              position: 'absolute',
+              inset: 0,
+              background: 'rgba(13,26,14,0.6)',
+              backdropFilter: 'blur(4px)',
+            }}
+          />
+          <div style={{
+            position: 'relative',
+            width: '100%',
+            maxWidth: '900px',
+            height: '80vh',
+            background: '#fff',
+            borderRadius: 'var(--r-2xl)',
+            overflow: 'hidden',
+            display: 'flex',
+            flexDirection: 'column',
+            border: '1px solid var(--clr-border)',
+            boxShadow: 'var(--shadow-xl)',
+          }}>
+            {/* Modal Header */}
+            <div style={{
+              padding: '20px 28px',
+              borderBottom: '1px solid var(--clr-border)',
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+            }}>
               <div>
-                <h3 className="text-xl font-serif font-bold text-sage-900">Invoice Statement</h3>
-                <p className="text-xs text-sage-500 font-bold tracking-widest uppercase mt-1">Ref: {viewingInvoice.number}</p>
+                <h3 style={{ fontFamily: 'var(--font-display)', fontSize: '1.25rem', fontWeight: 500, color: 'var(--clr-ink)' }}>
+                  State Invoice
+                </h3>
+                <p style={{ fontSize: '0.6875rem', fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--clr-warm-gray)', marginTop: '4px' }}>
+                  Reference {viewingInvoice.number}
+                </p>
               </div>
-              <button 
-                onClick={() => setViewingInvoice(null)} 
-                className="p-2.5 bg-sage-50 text-sage-500 rounded-xl hover:bg-rose-50 hover:text-rose-600 transition-all border border-sage-100 shadow-sm active:scale-95"
+              <button
+                onClick={() => setViewingInvoice(null)}
+                style={{
+                  background: 'var(--clr-forest-50)',
+                  border: 'none',
+                  cursor: 'pointer',
+                  width: 36,
+                  height: 36,
+                  borderRadius: '50%',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  fontSize: '1.1rem',
+                  color: 'var(--clr-ink)',
+                }}
               >
-                <FaTimes size={18} />
+                ✕
               </button>
             </div>
-            <div className="flex-1 bg-sage-50/50 p-2 md:p-4 relative">
+            {/* Modal Body */}
+            <div style={{ flexGrow: 1, background: 'var(--clr-forest-50)', padding: '16px' }}>
               <iframe 
                 src={`${viewingInvoice.url}#toolbar=0`} 
-                className="w-full h-full bg-white rounded-xl border border-sage-200 shadow-sm"
+                style={{
+                  width: '100%',
+                  height: '100%',
+                  background: '#fff',
+                  border: '1px solid var(--clr-border)',
+                  borderRadius: 'var(--r-xl)',
+                }}
                 title="Invoice Viewer"
               />
             </div>

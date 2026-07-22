@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react';
 import axios from 'axios';
 import { toast } from 'react-toastify';
-import { FaDownload, FaCheck, FaTimes, FaEye, FaTimesCircle, FaSearch, FaFilter, FaWhatsapp, FaMapMarkerAlt, FaCalendarCheck, FaClock } from 'react-icons/fa';
 import { useAuth } from '../../context/AuthContext';
 
 const BookingManagement = () => {
@@ -91,14 +90,29 @@ const BookingManagement = () => {
     }
   };
 
-  const getStatusColor = (status) => {
+  const getStatusBadge = (status) => {
+    let styles = {
+      padding: '4px 10px',
+      borderRadius: '99px',
+      fontSize: '0.625rem',
+      fontWeight: 700,
+      letterSpacing: '0.08em',
+      textTransform: 'uppercase',
+      display: 'inline-flex',
+    };
+
     switch (status) {
-      case 'Queued': return 'bg-yellow-100 text-yellow-700 font-bold';
-      case 'Accepted': return 'bg-blue-100 text-blue-700 font-bold';
-      case 'Completed': return 'bg-green-100 text-green-700 font-bold';
-      case 'Rejected': return 'bg-red-100 text-red-700 font-bold';
-      case 'Cancelled': return 'bg-red-100 text-red-700 font-bold';
-      default: return 'bg-sage-100 text-sage-700';
+      case 'Queued':
+        return <span style={{ ...styles, background: '#fffbeb', color: '#b45309' }}>⏳ Queued</span>;
+      case 'Accepted':
+        return <span style={{ ...styles, background: 'var(--clr-forest-50)', color: 'var(--clr-forest-700)' }}>✓ Active</span>;
+      case 'Completed':
+        return <span style={{ ...styles, background: '#e8f5e9', color: '#2e7d32' }}>✓ Completed</span>;
+      case 'Rejected':
+      case 'Cancelled':
+        return <span style={{ ...styles, background: '#fef2f2', color: '#b91c1c' }}>✕ {status}</span>;
+      default:
+        return <span style={{ ...styles, background: 'var(--clr-forest-5)0', color: 'var(--clr-warm-gray)' }}>{status}</span>;
     }
   };
 
@@ -117,218 +131,194 @@ const BookingManagement = () => {
     return matchesSearch && matchesStatus;
   });
 
-  if (loading) return <div className="p-8 text-center text-sage-600 font-serif animate-pulse">Accessing Secure Records...</div>;
+  if (loading) {
+    return (
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '120px 0' }}>
+        <div className="spinner" style={{ width: 28, height: 28 }} />
+      </div>
+    );
+  }
 
   return (
-    <div className="space-y-6 pb-12">
-      <div className="flex justify-between items-center">
-        <h2 className="text-3xl font-serif font-bold text-sage-900">Booking Management</h2>
-        <div className="bg-darkGreen text-white px-4 py-2 rounded-lg text-xs font-semibold shadow-sm">
-          {bookings.length} Total Records
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '32px', paddingBottom: '80px' }}>
+      
+      {/* Title block */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '20px' }}>
+        <div>
+          <h2 style={{ fontFamily: 'var(--font-display)', fontSize: '2.5rem', fontWeight: 500, color: 'var(--clr-ink)', letterSpacing: '-0.02em', marginBottom: '4px' }}>
+            Bookings Ledger
+          </h2>
+          <p style={{ fontSize: '0.9375rem', color: 'var(--clr-warm-gray)' }}>Track incoming schedules, configure crystals, and confirm payments.</p>
+        </div>
+        <div style={{
+          background: 'var(--clr-forest-700)',
+          color: '#fff',
+          padding: '6px 14px',
+          borderRadius: '99px',
+          fontSize: '0.75rem',
+          fontWeight: 700,
+          letterSpacing: '0.04em',
+        }}>
+          {bookings.length} Records
         </div>
       </div>
 
-      {/* Filters */}
-      <div className="flex flex-col md:flex-row gap-4 mb-6">
-        <div className="flex-1 relative">
-          <FaSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 text-sage-400" />
+      {/* Filters row */}
+      <div style={{ display: 'flex', gap: '16px', flexWrap: 'wrap' }}>
+        <div style={{ flexGrow: 1, minWidth: '240px', position: 'relative' }}>
           <input 
             type="text" 
-            placeholder="Search by client name or email..." 
+            placeholder="Search client record by name or email address..." 
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full pl-10 pr-4 py-2 border border-sage-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-sage-500 text-sm"
+            style={{
+              width: '100%',
+              padding: '12px 16px',
+              background: '#fff',
+              border: '1.5px solid var(--clr-border)',
+              borderRadius: 'var(--r-md)',
+              fontSize: '0.875rem',
+              outline: 'none',
+              transition: 'border-color 200ms ease',
+            }}
           />
         </div>
-        <div className="w-full md:w-64 relative">
-          <FaFilter className="absolute left-3 top-1/2 transform -translate-y-1/2 text-sage-400" />
+        <div style={{ width: '220px', position: 'relative' }}>
           <select 
             value={statusFilter}
             onChange={(e) => setStatusFilter(e.target.value)}
-            className="w-full pl-10 pr-4 py-2 border border-sage-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-sage-500 appearance-none bg-white text-sm text-sage-700"
+            style={{
+              width: '100%',
+              padding: '12px 36px 12px 16px',
+              background: '#fff',
+              border: '1.5px solid var(--clr-border)',
+              borderRadius: 'var(--r-md)',
+              fontSize: '0.875rem',
+              outline: 'none',
+              cursor: 'pointer',
+              appearance: 'none',
+            }}
           >
-            <option value="All">All Statuses</option>
+            <option value="All">All statuses</option>
             <option value="Queued">Queued (New)</option>
             <option value="Accepted">Accepted (Active)</option>
             <option value="Completed">Completed</option>
             <option value="Rejected">Rejected</option>
             <option value="Cancelled">Cancelled</option>
           </select>
+          <span style={{ position: 'absolute', right: '16px', top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none', fontSize: '0.75rem', color: 'var(--clr-warm-gray)' }}>▼</span>
         </div>
       </div>
 
-      {proofModal && (
-        <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-md z-50 flex items-center justify-center p-4" onClick={() => setProofModal(null)}>
-          <div className="bg-white rounded-[3rem] shadow-2xl shadow-black/20 max-w-2xl w-full max-h-[90vh] overflow-y-auto p-10 relative" onClick={(e) => e.stopPropagation()}>
-            <button onClick={() => setProofModal(null)} className="absolute top-8 right-8 text-slate-400 hover:text-red-500 transition-colors">
-              <FaTimesCircle size={32} />
-            </button>
-
-            <div className="flex flex-col gap-1 mb-10">
-              <span className="text-[10px] font-black text-gold uppercase tracking-[0.2em]">Session Dossier</span>
-              <h3 className="font-serif font-bold text-4xl text-slate-900 leading-tight">Details & Verification</h3>
-              <div className="w-16 h-1.5 bg-gold rounded-full mt-3" />
-            </div>
-            
-            <div className="space-y-8 text-sm">
-              <div className="grid grid-cols-2 gap-8">
-                <div>
-                  <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 font-sans">Full Name</p>
-                  <p className="text-xl font-bold text-slate-900 font-serif">{proofModal.customerName}</p>
-                </div>
-                <div>
-                  <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 font-sans">Direct Contact</p>
-                  <p className="font-bold text-slate-900 flex items-center gap-2">
-                    <div className="w-8 h-8 rounded-full bg-emerald-50 flex items-center justify-center text-emerald-600">
-                      <FaWhatsapp /> 
-                    </div>
-                    {proofModal.customerWhatsApp || proofModal.customerPhone}
-                  </p>
-                </div>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                <div className="bg-slate-50 rounded-3xl p-6 border border-slate-100">
-                  <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3">Temporal Path</p>
-                  <div className="flex items-center gap-3 mb-2">
-                    <FaCalendarCheck className="text-gold" />
-                    <span className="font-bold text-slate-900">{new Date(proofModal.appointmentDate).toLocaleDateString(undefined, { dateStyle: 'full' })}</span>
-                  </div>
-                  <div className="flex items-center gap-3">
-                    <FaClock className="text-gold" />
-                    <span className="text-lg font-black text-darkGreen">{formatTime12h(proofModal.appointmentTime)}</span>
-                  </div>
-                </div>
-                <div className="bg-slate-50 rounded-3xl p-6 border border-slate-100">
-                  <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3">Financial Nexus</p>
-                  <p className="text-3xl font-serif font-bold text-slate-900 mb-2">
-                    {proofModal.currencySymbol || '₹'}{(proofModal.convertedAmount || proofModal.price).toLocaleString()}
-                  </p>
-                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-tighter italic">Method: {proofModal.paymentMethod}</p>
-                </div>
-              </div>
-
-              <div className="bg-white rounded-3xl p-6 border border-slate-100 shadow-inner">
-                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3 px-1">Location Context</p>
-                <div className="flex items-center gap-4">
-                  <div className="w-12 h-12 bg-slate-50 rounded-2xl flex items-center justify-center text-gold shadow-sm">
-                    <FaMapMarkerAlt size={20} />
-                  </div>
-                  <div>
-                    <p className="font-bold text-slate-900 text-lg">{proofModal.district}, {proofModal.state}</p>
-                    <p className="text-[10px] text-slate-400 font-black uppercase tracking-widest">{proofModal.country}</p>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {proofModal.bookingStatus === 'Queued' && (
-              <div className="flex gap-4 mt-12">
-                <button 
-                  onClick={() => { updateStatus(proofModal._id, 'Accepted'); setProofModal(null); }}
-                  className="flex-1 py-5 bg-gradient-to-r from-darkGreen to-[#2d4d3a] text-white rounded-[2rem] font-black text-sm uppercase tracking-widest hover:shadow-2xl hover:shadow-darkGreen/40 transition-all active:scale-95 flex items-center justify-center gap-3"
-                >
-                  <FaCheck /> Accept Session
-                </button>
-                <button 
-                  onClick={() => { updateStatus(proofModal._id, 'Rejected'); setProofModal(null); }}
-                  className="px-10 py-5 bg-white border-2 border-red-50 text-red-500 rounded-[2rem] font-bold hover:bg-red-50 transition-all active:scale-95"
-                >
-                  <FaTimes />
-                </button>
-              </div>
-            )}
-          </div>
-        </div>
-      )}
-
-      <div className="bg-white rounded-xl shadow-sm border border-sage-100 overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="min-w-full text-left border-collapse">
+      {/* Table grid container */}
+      <div style={{
+        background: '#fff',
+        border: '1px solid var(--clr-border)',
+        borderRadius: 'var(--r-xl)',
+        boxShadow: 'var(--shadow-sm)',
+        overflow: 'hidden',
+      }}>
+        <div style={{ overflowX: 'auto' }}>
+          <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', minWidth: '800px' }}>
             <thead>
-              <tr className="bg-sage-50 text-sage-700 text-sm uppercase tracking-wider">
-                <th className="p-4 font-semibold border-b border-sage-200">Slot</th>
-                <th className="p-4 font-semibold border-b border-sage-200">Customer</th>
-                <th className="p-4 font-semibold border-b border-sage-200">Session Type</th>
-                <th className="p-4 font-semibold border-b border-sage-200">Financials</th>
-                <th className="p-4 font-semibold border-b border-sage-200">Status</th>
-                <th className="p-4 font-semibold border-b border-sage-200 text-right">Actions</th>
+              <tr style={{ background: 'var(--clr-forest-50)', borderBottom: '1px solid var(--clr-border)' }}>
+                <th style={{ padding: '16px 24px', fontSize: '0.6875rem', fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--clr-warm-gray)' }}>Slot Timestamp</th>
+                <th style={{ padding: '16px 24px', fontSize: '0.6875rem', fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--clr-warm-gray)' }}>Consultant Profile</th>
+                <th style={{ padding: '16px 24px', fontSize: '0.6875rem', fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--clr-warm-gray)' }}>Details</th>
+                <th style={{ padding: '16px 24px', fontSize: '0.6875rem', fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--clr-warm-gray)' }}>Financials</th>
+                <th style={{ padding: '16px 24px', fontSize: '0.6875rem', fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--clr-warm-gray)' }}>Status</th>
+                <th style={{ padding: '16px 24px', fontSize: '0.6875rem', fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--clr-warm-gray)', textAlign: 'right' }}>Actions</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-sage-100 text-sm text-sage-800">
+            <tbody style={{ fontSize: '0.875rem', color: 'var(--clr-ink)' }}>
               {filteredBookings.map((booking) => (
-                <tr key={booking._id} className="hover:bg-sage-50/50 transition-colors">
-                  <td className="p-4">
-                    <div className="flex flex-col">
-                       <span className="font-bold text-sage-900">{new Date(booking.appointmentDate).toLocaleDateString('en-IN', { day: '2-digit', month: 'short' })}</span>
-                       <span className="text-xs text-gold font-bold">{formatTime12h(booking.appointmentTime)}</span>
+                <tr 
+                  key={booking._id} 
+                  style={{ borderBottom: '1px solid var(--clr-border)', transition: 'background 150ms ease' }}
+                  onMouseEnter={e => e.currentTarget.style.background = 'var(--clr-forest-50)'}
+                  onMouseLeave={e => e.currentTarget.style.background = '#fff'}
+                >
+                  <td style={{ padding: '20px 24px' }}>
+                    <div style={{ display: 'flex', flexDirection: 'column' }}>
+                       <span style={{ fontWeight: 700, color: 'var(--clr-ink)' }}>{new Date(booking.appointmentDate).toLocaleDateString('en-IN', { day: '2-digit', month: 'short' })}</span>
+                       <span style={{ fontSize: '0.75rem', color: 'var(--clr-warm-gray)', marginTop: '2px' }}>{formatTime12h(booking.appointmentTime)}</span>
                     </div>
                   </td>
-                  <td className="p-4">
-                    <button onClick={() => setAdminModal(booking)} className="text-left group focus:outline-none block">
-                      <span className="font-semibold text-sage-900 group-hover:text-darkGreen transition-colors block leading-tight">
+                  <td style={{ padding: '20px 24px' }}>
+                    <button 
+                      onClick={() => setAdminModal(booking)} 
+                      style={{
+                        background: 'none',
+                        border: 'none',
+                        textAlign: 'left',
+                        cursor: 'pointer',
+                        padding: 0,
+                        display: 'block',
+                      }}
+                    >
+                      <span style={{ fontWeight: 600, color: 'var(--clr-forest-750)', fontSize: '0.9375rem' }}>
                         {booking.customerName}
                       </span>
-                      <div className="flex items-center gap-1.5 mt-0.5 text-sage-500">
-                         <FaWhatsapp size={10} className="text-green-500" />
-                         <span className="text-[11px]">{booking.customerWhatsApp || booking.customerPhone}</span>
-                      </div>
+                      <span style={{ display: 'block', fontSize: '0.75rem', color: 'var(--clr-warm-gray)', marginTop: '2px' }}>
+                        {booking.customerWhatsApp || booking.customerPhone}
+                      </span>
                     </button>
                   </td>
-                  <td className="p-4">
-                    <p className="text-[10px] font-bold text-sage-400 uppercase tracking-wider mb-0.5">{booking.callType}</p>
-                    <p className="text-xs font-semibold text-sage-700">{booking.duration} MIN</p>
+                  <td style={{ padding: '20px 24px' }}>
+                    <p style={{ margin: 0, fontSize: '0.75rem', fontWeight: 700, color: 'var(--clr-warm-gray)', textTransform: 'uppercase', letterSpacing: '0.04em' }}>{booking.callType}</p>
+                    <p style={{ margin: '2px 0 0', fontSize: '0.8125rem', color: 'var(--clr-ink-muted)' }}>{booking.duration} mins</p>
                   </td>
-                  <td className="p-4 text-sage-900">
-                    <p className="font-bold">{booking.currencySymbol || '₹'}{(booking.convertedAmount || booking.price).toLocaleString()}</p>
-                    <p className="text-[10px] text-sage-400 font-medium">{booking.paymentMethod === 'Manual' ? 'Bank' : 'Card'}</p>
+                  <td style={{ padding: '20px 24px' }}>
+                    <p style={{ margin: 0, fontWeight: 700 }}>{booking.currencySymbol || '₹'}{(booking.convertedAmount || booking.price).toLocaleString()}</p>
+                    <p style={{ margin: '2px 0 0', fontSize: '0.75rem', color: 'var(--clr-warm-gray)' }}>{booking.paymentMethod === 'Manual' ? 'Bank Wire' : 'Gateway'}</p>
                   </td>
-                  <td className="p-4">
-                    <span className={`px-2 py-1 rounded-full text-[10px] font-bold uppercase ${getStatusColor(booking.bookingStatus)}`}>
-                      {booking.bookingStatus}
-                    </span>
+                  <td style={{ padding: '20px 24px' }}>
+                    {getStatusBadge(booking.bookingStatus)}
                   </td>
-                  <td className="p-4 text-right space-x-2 whitespace-nowrap">
-                    {['Queued'].includes(booking.bookingStatus) && (
-                      <button onClick={() => updateStatus(booking._id, 'Accepted')} className="p-2 bg-green-50 text-green-600 rounded-lg hover:bg-green-600 hover:text-white transition shadow-sm" title="Accept">
-                        <FaCheck />
-                      </button>
-                    )}
-
-                    {['Accepted'].includes(booking.bookingStatus) && (
-                      <button onClick={() => updateStatus(booking._id, 'Completed')} className="p-2 bg-darkGreen/10 text-darkGreen rounded-lg hover:bg-darkGreen hover:text-white transition shadow-sm" title="Complete">
-                        <FaCheck />
-                      </button>
-                    )}
-
-                    {['Accepted', 'Completed'].includes(booking.bookingStatus) && (
-                      <div className="inline-flex gap-2">
+                  <td style={{ padding: '20px 24px', textAlign: 'right' }}>
+                    <div style={{ display: 'inline-flex', gap: '8px' }}>
+                      {['Queued'].includes(booking.bookingStatus) && (
                         <button 
-                          onClick={() => downloadInvoice(booking._id, booking.bookingStatus, 'view')} 
-                          className="p-2 bg-sage-100 text-sage-700 rounded-lg hover:bg-sage-200 transition shadow-sm" 
-                          title="View Invoice"
+                          onClick={() => updateStatus(booking._id, 'Accepted')} 
+                          style={{ background: 'var(--clr-forest-700)', color: '#fff', border: 'none', padding: '6px 12px', borderRadius: '4px', cursor: 'pointer', fontSize: '0.75rem', fontWeight: 700 }}
                         >
-                          <FaEye />
+                          Accept
                         </button>
+                      )}
+
+                      {['Accepted'].includes(booking.bookingStatus) && (
                         <button 
-                          onClick={() => downloadInvoice(booking._id, booking.bookingStatus, 'download')} 
-                          className="p-2 bg-blue-50 text-blue-600 rounded-lg hover:bg-blue-100 transition shadow-sm" 
-                          title="Download"
+                          onClick={() => updateStatus(booking._id, 'Completed')} 
+                          style={{ background: 'var(--clr-forest-750)', color: '#fff', border: 'none', padding: '6px 12px', borderRadius: '4px', cursor: 'pointer', fontSize: '0.75rem', fontWeight: 700 }}
                         >
-                          <FaDownload />
+                          Complete
                         </button>
-                      </div>
-                    )}
+                      )}
+
+                      {['Accepted', 'Completed'].includes(booking.bookingStatus) && (
+                        <>
+                          <button 
+                            onClick={() => downloadInvoice(booking._id, booking.bookingStatus, 'view')} 
+                            style={{ background: '#fff', border: '1px solid var(--clr-border)', color: 'var(--clr-ink)', padding: '6px 10px', borderRadius: '4px', cursor: 'pointer', fontSize: '0.75rem' }}
+                          >
+                            👁 View
+                          </button>
+                          <button 
+                            onClick={() => downloadInvoice(booking._id, booking.bookingStatus, 'download')} 
+                            style={{ background: 'var(--clr-forest-50)', border: '1px solid var(--clr-border)', color: 'var(--clr-forest-700)', padding: '6px 10px', borderRadius: '4px', cursor: 'pointer', fontSize: '0.75rem' }}
+                          >
+                            📥 PDF
+                          </button>
+                        </>
+                      )}
+                    </div>
                   </td>
                 </tr>
               ))}
               {filteredBookings.length === 0 && (
                 <tr>
-                  <td colSpan="6" className="p-12 text-center">
-                    <div className="flex flex-col items-center">
-                      <FaSearch className="text-sage-200 text-3xl mb-4" />
-                      <p className="text-sage-400 font-serif italic text-lg">No sessions match your search criteria.</p>
-                    </div>
+                  <td colSpan="6" style={{ padding: '60px', textAlign: 'center', color: 'var(--clr-warm-gray)' }}>
+                    No bookings record matching target filters.
                   </td>
                 </tr>
               )}
@@ -339,25 +329,46 @@ const BookingManagement = () => {
 
       {/* Invoice Viewer Modal */}
       {viewingInvoice && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 sm:p-6 md:p-10 animate-in fade-in duration-300">
-          <div className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm" onClick={() => setViewingInvoice(null)} />
-          <div className="relative w-full max-w-5xl h-[85vh] bg-white rounded-[2.5rem] shadow-2xl overflow-hidden flex flex-col border border-white/20 scale-in-center transition-transform">
-            <div className="p-6 border-b border-slate-100 flex justify-between items-center bg-white">
+        <div style={{
+          position: 'fixed',
+          inset: 0,
+          zIndex: 100,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          padding: '24px',
+          background: 'rgba(13,26,14,0.4)',
+          backdropFilter: 'blur(4px)',
+        }}>
+          <div style={{
+            position: 'relative',
+            width: '100%',
+            maxWidth: '1000px',
+            height: '85vh',
+            background: '#fff',
+            borderRadius: 'var(--r-2xl)',
+            overflow: 'hidden',
+            display: 'flex',
+            flexDirection: 'column',
+            border: '1px solid var(--clr-border)',
+            boxShadow: 'var(--shadow-xl)',
+          }}>
+            <div style={{ padding: '24px', borderBottom: '1px solid var(--clr-border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <div>
-                <h3 className="text-xl font-serif font-bold text-slate-900">Document Preview</h3>
-                <p className="text-xs text-slate-400 font-medium tracking-widest uppercase mt-1">Ref: {viewingInvoice.number}</p>
+                <h3 style={{ fontFamily: 'var(--font-display)', fontSize: '1.25rem', fontWeight: 500, margin: 0 }}>Invoice Snapshot</h3>
+                <p style={{ fontSize: '0.75rem', color: 'var(--clr-warm-gray)', margin: '2px 0 0' }}>Ref: {viewingInvoice.number}</p>
               </div>
               <button 
                 onClick={() => setViewingInvoice(null)} 
-                className="p-3 bg-slate-50 text-slate-400 rounded-2xl hover:bg-rose-50 hover:text-rose-500 transition-all border border-slate-100 shadow-sm active:scale-95"
+                style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '1.25rem', color: 'var(--clr-warm-gray)' }}
               >
-                <FaTimes size={18} />
+                ✕ Close
               </button>
             </div>
-            <div className="flex-1 bg-slate-50 relative">
+            <div style={{ flexGrow: 1, bg: '#f9f9f9' }}>
               <iframe 
                 src={`${viewingInvoice.url}#toolbar=0`} 
-                className="w-full h-full border-none"
+                style={{ width: '100%', height: '100%', border: 'none' }}
                 title="Invoice Viewer"
               />
             </div>
@@ -365,65 +376,88 @@ const BookingManagement = () => {
         </div>
       )}
 
-      {/* Session Management Modal (Admin Click User Name) */}
+      {/* Session Management Modal */}
       {adminModal && (
-        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-md z-[60] flex items-center justify-center p-4" onClick={() => setAdminModal(null)}>
-          <div className="bg-white shadow-2xl w-full max-w-xl rounded-[2rem] overflow-hidden animate-in fade-in zoom-in duration-300" onClick={(e) => e.stopPropagation()}>
-            <div className="p-10">
-               <div className="flex justify-between items-start mb-8">
+        <div style={{
+          position: 'fixed',
+          inset: 0,
+          zIndex: 100,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          padding: '24px',
+          background: 'rgba(13,26,14,0.4)',
+          backdropFilter: 'blur(4px)',
+        }}>
+          <div style={{
+            background: '#fff',
+            border: '1px solid var(--clr-border)',
+            width: '100%',
+            maxWidth: '560px',
+            borderRadius: 'var(--r-2xl)',
+            overflow: 'hidden',
+            boxShadow: 'var(--shadow-xl)',
+          }}>
+            <div style={{ padding: '32px' }}>
+               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '24px' }}>
                  <div>
-                   <h3 className="text-3xl font-serif font-bold text-slate-900">Session Protocol</h3>
-                   <p className="text-xs text-gold font-black uppercase tracking-[0.2em] mt-1">{adminModal.customerName}</p>
+                   <h3 style={{ fontFamily: 'var(--font-display)', fontSize: '1.5rem', fontWeight: 500, color: 'var(--clr-ink)', margin: 0 }}>Session Detail Config</h3>
+                   <p style={{ fontSize: '0.75rem', color: 'var(--clr-warm-gray)', marginTop: '4px' }}>Client: {adminModal.customerName}</p>
                  </div>
-                 <button onClick={() => setAdminModal(null)} className="text-slate-300 hover:text-rose-500 transition-colors">
-                   <FaTimesCircle size={28} />
+                 <button 
+                   onClick={() => setAdminModal(null)} 
+                   style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '1.25rem', color: 'var(--clr-warm-gray)' }}
+                 >
+                   ✕
                  </button>
                </div>
 
-               <div className="space-y-8">
-                 {/* Appointment Sync */}
-                 <div className="bg-slate-50 p-6 border border-slate-100 flex items-center justify-between rounded-2xl">
-                   <div className="flex items-center gap-4">
-                     <div className="w-12 h-12 bg-white rounded-xl flex items-center justify-center text-darkGreen shadow-sm">
-                       <FaCalendarCheck size={20} />
-                     </div>
-                     <div>
-                       <p className="text-[10px] font-black text-slate-900 uppercase tracking-widest">Scheduled Path & Time</p>
-                       <p className="font-bold text-slate-900">
-                        {new Date(adminModal.appointmentDate).toLocaleDateString(undefined, { dateStyle: 'medium' })}
-                        <span className="text-gold ml-2 font-black">@ {adminModal.appointmentTime}</span>
-                       </p>
-                     </div>
+               <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+                 {/* Appointment Sync info */}
+                 <div style={{
+                   background: 'var(--clr-forest-50)',
+                   padding: '16px 20px',
+                   borderRadius: 'var(--r-md)',
+                   border: '1px solid var(--clr-border)',
+                   display: 'flex',
+                   alignItems: 'center',
+                   justifyContent: 'space-between',
+                 }}>
+                   <div>
+                     <p style={{ fontSize: '0.5625rem', fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--clr-warm-gray)', margin: 0 }}>Proposed Schedule</p>
+                     <p style={{ fontWeight: 600, color: 'var(--clr-ink)', margin: '2px 0 0', fontSize: '0.875rem' }}>
+                      {new Date(adminModal.appointmentDate).toLocaleDateString()} @ {formatTime12h(adminModal.appointmentTime)}
+                     </p>
                    </div>
-                   <div className="flex items-center gap-3">
-                     <span className="text-[10px] font-black text-slate-900 uppercase tracking-widest leading-none">Confirm Execution</span>
+                   <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                     <label style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--clr-ink-muted)' }}>Confirmed</label>
                      <input 
                        type="checkbox" 
                        defaultChecked={adminModal.isManuallyConfirmed}
                        onChange={(e) => updateAdminDetails(adminModal._id, { isManuallyConfirmed: e.target.checked })}
-                       className="w-6 h-6 rounded border-2 border-slate-200 text-darkGreen focus:ring-darkGreen cursor-pointer"
+                       style={{ width: '16px', height: '16px', cursor: 'pointer' }}
                      />
                    </div>
                  </div>
 
-                 {/* Treatment Boxes */}
-                 <div className="grid grid-cols-1 gap-6">
-                   <div className="space-y-3">
-                     <label className="text-[10px] font-black text-slate-900 uppercase tracking-widest ml-1">Spiritual Artifacts (Crystals)</label>
+                 {/* Textareas */}
+                 <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                   <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                     <label style={{ fontSize: '0.625rem', fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--clr-warm-gray)' }}>Assigned Crystals / Stones</label>
                      <textarea 
-                       id="crystals-box"
-                       className="w-full p-6 bg-slate-50 border border-slate-100 rounded-2xl focus:ring-0 focus:outline-none focus:border-gold transition-all text-sm font-medium min-h-[100px] resize-none"
-                       placeholder="Assign crystals for this session..."
+                       className="input-field"
+                       style={{ minHeight: '80px', resize: 'none', padding: '12px' }}
+                       placeholder="Enter assigned crystal details..."
                        defaultValue={adminModal.crystals}
                        onBlur={(e) => updateAdminDetails(adminModal._id, { crystals: e.target.value })}
                      />
                    </div>
-                   <div className="space-y-3">
-                     <label className="text-[10px] font-black text-slate-900 uppercase tracking-widest ml-1">Essence & Remedies (Medicine)</label>
+                   <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                     <label style={{ fontSize: '0.625rem', fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--clr-warm-gray)' }}>Recommended Bach Flower Remedies</label>
                      <textarea 
-                       id="medicine-box"
-                       className="w-full p-6 bg-slate-50 border border-slate-100 rounded-2xl focus:ring-0 focus:outline-none focus:border-gold transition-all text-sm font-medium min-h-[100px] resize-none"
-                       placeholder="Recommended spiritual remedies..."
+                       className="input-field"
+                       style={{ minHeight: '80px', resize: 'none', padding: '12px' }}
+                       placeholder="Enter remedy essence details..."
                        defaultValue={adminModal.medicine}
                        onBlur={(e) => updateAdminDetails(adminModal._id, { medicine: e.target.value })}
                      />
@@ -431,12 +465,13 @@ const BookingManagement = () => {
                  </div>
                </div>
 
-               <div className="mt-10 flex gap-4">
+               <div style={{ marginTop: '32px', display: 'flex', gap: '12px' }}>
                  <button 
                    onClick={() => setAdminModal(null)}
-                   className="flex-1 py-5 bg-darkGreen text-white font-black text-xs uppercase tracking-[0.2em] hover:bg-emerald-900 transition-all rounded-2xl active:scale-95 shadow-lg shadow-darkGreen/20"
+                   className="btn-primary"
+                   style={{ flexGrow: 1, padding: '12px' }}
                  >
-                   Archive Protocol
+                   Save & Close
                  </button>
                </div>
             </div>

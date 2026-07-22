@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react';
 import axios from 'axios';
 import { toast } from 'react-toastify';
-import { FaTrash, FaUserSlash, FaSearch, FaCalendarCheck, FaTimesCircle } from 'react-icons/fa';
 import { useAuth } from '../../context/AuthContext';
 
 const UserManagement = () => {
@@ -85,86 +84,163 @@ const UserManagement = () => {
     u.email?.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
-  if (loading) return <div className="p-8 text-center text-sage-600">Loading Users...</div>;
+  const getStatusBadge = (status) => {
+    let styles = {
+      padding: '3px 8px',
+      borderRadius: '99px',
+      fontSize: '0.625rem',
+      fontWeight: 700,
+      letterSpacing: '0.04em',
+      textTransform: 'uppercase',
+      display: 'inline-flex',
+    };
+
+    if (status === 'Accepted' || status === 'Completed') {
+      return <span style={{ ...styles, background: 'var(--clr-forest-50)', color: 'var(--clr-forest-700)' }}>{status}</span>;
+    }
+    if (status === 'Rejected' || status === 'Cancelled') {
+      return <span style={{ ...styles, background: '#fef2f2', color: '#b91c1c' }}>{status}</span>;
+    }
+    return <span style={{ ...styles, background: '#fffbeb', color: '#b45309' }}>{status}</span>;
+  };
+
+  if (loading) {
+    return (
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '120px 0' }}>
+        <div className="spinner" style={{ width: 28, height: 28 }} />
+      </div>
+    );
+  }
 
   return (
-    <div className="space-y-6 pb-12">
-      <div className="flex justify-between items-center">
-        <h2 className="text-3xl font-serif font-bold text-sage-900">User Management</h2>
-        <div className="bg-darkGreen text-white px-4 py-2 rounded-lg text-xs font-semibold shadow-sm">
-          {users.length} Total Users
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '32px', paddingBottom: '80px' }}>
+      
+      {/* Title block */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '20px' }}>
+        <div>
+          <h2 style={{ fontFamily: 'var(--font-display)', fontSize: '2.5rem', fontWeight: 500, color: 'var(--clr-ink)', letterSpacing: '-0.02em', marginBottom: '4px' }}>
+            User Workspace
+          </h2>
+          <p style={{ fontSize: '0.9375rem', color: 'var(--clr-warm-gray)' }}>Analyze registered client directories, session frequency, and transactional totals.</p>
+        </div>
+        <div style={{
+          background: 'var(--clr-forest-700)',
+          color: '#fff',
+          padding: '6px 14px',
+          borderRadius: '99px',
+          fontSize: '0.75rem',
+          fontWeight: 700,
+          letterSpacing: '0.04em',
+        }}>
+          {users.length} Users Registered
         </div>
       </div>
 
-      {/* Filters */}
-      <div className="mb-6">
-        <div className="relative max-w-xl">
-          <FaSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 text-sage-400" />
+      {/* Filter search */}
+      <div style={{ display: 'flex', gap: '16px' }}>
+        <div style={{ flexGrow: 1, maxWith: '600px', position: 'relative' }}>
           <input 
             type="text" 
-            placeholder="Search by name or email..." 
+            placeholder="Search directory records by name or email address..." 
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full pl-10 pr-4 py-2 border border-sage-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-sage-500 text-sm"
+            style={{
+              width: '100%',
+              padding: '12px 16px',
+              background: '#fff',
+              border: '1.5px solid var(--clr-border)',
+              borderRadius: 'var(--r-md)',
+              fontSize: '0.875rem',
+              outline: 'none',
+            }}
           />
         </div>
       </div>
 
-      <div className="bg-white rounded-xl shadow-sm border border-sage-100 overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="min-w-full text-left border-collapse">
+      {/* Table grid */}
+      <div style={{
+        background: '#fff',
+        border: '1px solid var(--clr-border)',
+        borderRadius: 'var(--r-xl)',
+        boxShadow: 'var(--shadow-sm)',
+        overflow: 'hidden',
+      }}>
+        <div style={{ overflowX: 'auto' }}>
+          <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', minWidth: '900px' }}>
             <thead>
-              <tr className="bg-sage-50 text-sage-700 text-sm uppercase tracking-wider">
-                <th className="p-4 font-semibold border-b border-sage-200">Identity</th>
-                <th className="p-4 font-semibold border-b border-sage-200">Location</th>
-                <th className="p-4 font-semibold border-b border-sage-200 text-center">Sessions</th>
-                <th className="p-4 font-semibold border-b border-sage-200 text-right">Investment</th>
-                <th className="p-4 font-semibold border-b border-sage-200">Joined</th>
-                <th className="p-4 font-semibold border-b border-sage-200 text-right">Actions</th>
+              <tr style={{ background: 'var(--clr-forest-50)', borderBottom: '1px solid var(--clr-border)' }}>
+                <th style={{ padding: '16px 24px', fontSize: '0.6875rem', fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--clr-warm-gray)' }}>User identity</th>
+                <th style={{ padding: '16px 24px', fontSize: '0.6875rem', fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--clr-warm-gray)' }}>Location</th>
+                <th style={{ padding: '16px 24px', fontSize: '0.6875rem', fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--clr-warm-gray)', textAlign: 'center' }}>Sessions</th>
+                <th style={{ padding: '16px 24px', fontSize: '0.6875rem', fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--clr-warm-gray)', textAlign: 'right' }}>Total Investment</th>
+                <th style={{ padding: '16px 24px', fontSize: '0.6875rem', fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--clr-warm-gray)' }}>Joined date</th>
+                <th style={{ padding: '16px 24px', fontSize: '0.6875rem', fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--clr-warm-gray)', textAlign: 'right' }}>Actions</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-sage-100 text-sm text-sage-800">
+            <tbody style={{ fontSize: '0.875rem', color: 'var(--clr-ink)' }}>
               {filteredUsers.map((user) => (
-                <tr key={user._id} className="hover:bg-sage-50/50 transition-colors">
-                  <td className="p-4">
-                    <button onClick={() => openUserDetails(user)} className="text-left group focus:outline-none block">
-                      <span className="font-semibold text-sage-900 group-hover:text-darkGreen transition-colors block leading-tight">
+                <tr 
+                  key={user._id} 
+                  style={{ borderBottom: '1px solid var(--clr-border)', transition: 'background 150ms ease' }}
+                  onMouseEnter={e => e.currentTarget.style.background = 'var(--clr-forest-50)'}
+                  onMouseLeave={e => e.currentTarget.style.background = '#fff'}
+                >
+                  <td style={{ padding: '20px 24px' }}>
+                    <button 
+                      onClick={() => openUserDetails(user)} 
+                      style={{
+                        background: 'none',
+                        border: 'none',
+                        textAlign: 'left',
+                        cursor: 'pointer',
+                        padding: 0,
+                        display: 'block',
+                      }}
+                    >
+                      <span style={{ fontWeight: 600, color: 'var(--clr-forest-750)', fontSize: '0.9375rem' }}>
                         {user.name}
                       </span>
-                      <span className="text-xs text-sage-500 block mt-0.5">{user.email}</span>
+                      <span style={{ display: 'block', fontSize: '0.75rem', color: 'var(--clr-warm-gray)', marginTop: '2px' }}>
+                        {user.email}
+                      </span>
                     </button>
                   </td>
-                  <td className="p-4">
-                    <span className="font-medium text-sage-700">{user.lastLoginCountry || 'N/A'}</span>
+                  <td style={{ padding: '20px 24px' }}>
+                    <span style={{ fontWeight: 500 }}>{user.lastLoginCountry || '—'}</span>
                   </td>
-                  <td className="p-4 text-center font-bold text-sage-900">
+                  <td style={{ padding: '20px 24px', textAlign: 'center', fontWeight: 700 }}>
                     {user.totalBookings || 0}
                   </td>
-                  <td className="p-4 text-right font-bold text-sage-900">
+                  <td style={{ padding: '20px 24px', textAlign: 'right', fontWeight: 700 }}>
                     ₹{(user.totalSpending || 0).toLocaleString()}
                   </td>
-                  <td className="p-4">
-                    <span className="text-xs text-sage-500 whitespace-nowrap">
-                      {new Date(user.createdAt).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: '2-digit' })}
+                  <td style={{ padding: '20px 24px' }}>
+                    <span style={{ fontSize: '0.75rem', color: 'var(--clr-warm-gray)' }}>
+                      {new Date(user.createdAt).toLocaleDateString()}
                     </span>
                   </td>
-                  <td className="p-4 text-right space-x-2 whitespace-nowrap">
-                    <button onClick={() => fetchUserSessions(user)} className="p-2 bg-sage-100 text-sage-700 rounded-lg hover:bg-sage-200 transition" title="Protocols">
-                      <FaCalendarCheck />
-                    </button>
-                    <button onClick={() => deleteUser(user._id)} className="p-2 bg-red-50 text-red-600 rounded-lg hover:bg-red-100 transition" title="Delete">
-                      <FaTrash />
-                    </button>
+                  <td style={{ padding: '20px 24px', textAlign: 'right' }}>
+                    <div style={{ display: 'inline-flex', gap: '8px' }}>
+                      <button 
+                        onClick={() => fetchUserSessions(user)} 
+                        style={{ background: '#fff', border: '1px solid var(--clr-border)', padding: '6px 10px', borderRadius: '4px', cursor: 'pointer', fontSize: '0.75rem', color: 'var(--clr-ink)' }}
+                      >
+                        Protocols
+                      </button>
+                      <button 
+                        onClick={() => deleteUser(user._id)} 
+                        style={{ background: '#fef2f2', border: '1px solid #fecaca', padding: '6px 10px', borderRadius: '4px', cursor: 'pointer', fontSize: '0.75rem', color: '#ef4444' }}
+                      >
+                        Delete
+                      </button>
+                    </div>
                   </td>
                 </tr>
               ))}
               {filteredUsers.length === 0 && (
                 <tr>
-                  <td colSpan="6" className="p-12 text-center text-sage-500">
-                    <div className="flex flex-col items-center">
-                      <FaSearch className="text-sage-200 text-3xl mb-4" />
-                      <p>No seekers matching your query.</p>
-                    </div>
+                  <td colSpan="6" style={{ padding: '40px', textAlign: 'center', color: 'var(--clr-warm-gray)' }}>
+                    No matching users found in the system registry.
                   </td>
                 </tr>
               )}
@@ -175,65 +251,85 @@ const UserManagement = () => {
 
       {/* Session Protocol Modal */}
       {sessionModal && (
-        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-md z-[60] flex items-center justify-center p-4" onClick={() => setSessionModal(null)}>
-          <div className="bg-white shadow-2xl w-full max-w-2xl max-h-[90vh] rounded-[2rem] overflow-hidden flex flex-col animate-in fade-in zoom-in duration-300" onClick={(e) => e.stopPropagation()}>
-            <div className="p-10 border-b border-slate-50 flex justify-between items-center bg-white sticky top-0 z-10">
+        <div style={{
+          position: 'fixed',
+          inset: 0,
+          zIndex: 100,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          padding: '24px',
+          background: 'rgba(13,26,14,0.4)',
+          backdropFilter: 'blur(4px)',
+        }}>
+          <div style={{
+            background: '#fff',
+            border: '1px solid var(--clr-border)',
+            width: '100%',
+            maxWidth: '680px',
+            maxHeight: '85vh',
+            borderRadius: 'var(--r-2xl)',
+            overflow: 'hidden',
+            display: 'flex',
+            flexDirection: 'column',
+            boxShadow: 'var(--shadow-xl)',
+          }}>
+            <div style={{ padding: '24px', borderBottom: '1px solid var(--clr-border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <div>
-                <h3 className="text-3xl font-serif font-bold text-slate-900">Session Protocols</h3>
-                <p className="text-xs text-gold font-bold uppercase tracking-[0.2em] mt-1">{sessionModal.user.name}</p>
+                <h3 style={{ fontFamily: 'var(--font-display)', fontSize: '1.5rem', fontWeight: 500, margin: 0 }}>Session Protocols</h3>
+                <p style={{ fontSize: '0.75rem', color: 'var(--clr-warm-gray)', marginTop: '4px' }}>Client: {sessionModal.user.name}</p>
               </div>
-              <button onClick={() => setSessionModal(null)} className="text-slate-300 hover:text-rose-500 transition-colors">
-                <FaTimesCircle size={28} />
+              <button 
+                onClick={() => setSessionModal(null)} 
+                style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '1.25rem', color: 'var(--clr-warm-gray)' }}
+              >
+                ✕
               </button>
             </div>
 
-            <div className="flex-1 p-10 overflow-y-auto space-y-12 bg-slate-50/30">
+            <div style={{ flexGrow: 1, overflowY: 'auto', padding: '24px', display: 'flex', flexDirection: 'column', gap: '20px', background: 'var(--clr-forest-50)' }}>
                {sessionModal.bookings.length === 0 ? (
-                 <div className="text-center py-20">
-                   <p className="text-slate-400 font-serif italic text-lg text-center">This soul has no registered sessions yet.</p>
-                 </div>
+                 <p style={{ textAlign: 'center', fontStyle: 'italic', padding: '40px 0', color: 'var(--clr-warm-gray)' }}>
+                   This user has no recorded sessions.
+                 </p>
                ) : (
                  sessionModal.bookings.map((booking) => (
-                   <div key={booking._id} className="bg-white p-8 border border-slate-100 space-y-8 rounded-3xl">
-                      <div className="flex items-center justify-between border-b border-slate-50 pb-6">
-                        <div className="flex items-center gap-4">
-                          <div className="w-12 h-12 bg-slate-50 rounded-2xl flex items-center justify-center text-darkGreen">
-                            <FaCalendarCheck size={20} />
-                          </div>
-                          <div>
-                            <p className="text-[10px] font-bold text-slate-900 uppercase tracking-widest">Appointment Date & Time</p>
-                            <p className="font-bold text-slate-900">
-                              {new Date(booking.appointmentDate).toLocaleDateString(undefined, { dateStyle: 'medium' })} 
-                              <span className="text-gold ml-2 font-bold">@ {booking.appointmentTime}</span>
-                            </p>
-                          </div>
+                   <div key={booking._id} style={{ bg: '#fff', border: '1px solid var(--clr-border)', borderRadius: 'var(--r-xl)', padding: '24px', background: '#fff', display: 'flex', flexDirection: 'column', gap: '20px' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px' }}>
+                        <div>
+                          <p style={{ fontSize: '0.5625rem', fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--clr-warm-gray)', margin: 0 }}>Schedule Details</p>
+                          <p style={{ fontWeight: 600, color: 'var(--clr-ink)', margin: '2px 0 0', fontSize: '0.875rem' }}>
+                            {new Date(booking.appointmentDate).toLocaleDateString()} @ {booking.appointmentTime}
+                          </p>
                         </div>
-                        <div className="flex items-center gap-3 bg-slate-50 px-4 py-2 rounded-xl border border-slate-100">
-                          <span className="text-[10px] font-bold text-slate-900 uppercase tracking-widest">Confirmed</span>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                          <span style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--clr-ink-muted)' }}>Confirmed</span>
                           <input 
                             type="checkbox" 
                             defaultChecked={booking.isManuallyConfirmed}
                             onChange={(e) => updateSessionDetails(booking._id, { isManuallyConfirmed: e.target.checked })}
-                            className="w-5 h-5 rounded border-2 border-slate-200 text-darkGreen focus:ring-darkGreen cursor-pointer"
+                            style={{ width: '16px', height: '16px', cursor: 'pointer' }}
                           />
                         </div>
                       </div>
 
-                      <div className="grid grid-cols-1 gap-6">
-                        <div className="space-y-3">
-                          <label className="text-[10px] font-bold text-slate-900 uppercase tracking-widest ml-1">Crystals (Prescription)</label>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                          <label style={{ fontSize: '0.625rem', fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--clr-warm-gray)' }}>Crystals Assigned</label>
                           <textarea 
-                            className="w-full p-5 bg-slate-50/50 border border-slate-100 rounded-2xl focus:ring-0 focus:outline-none focus:border-gold transition-all text-sm font-medium min-h-[80px] resize-none"
-                            placeholder="Assign crystals..."
+                            className="input-field"
+                            style={{ minHeight: '60px', resize: 'none', padding: '8px' }}
+                            placeholder="Crystals prescribed..."
                             defaultValue={booking.crystals}
                             onBlur={(e) => updateSessionDetails(booking._id, { crystals: e.target.value })}
                           />
                         </div>
-                        <div className="space-y-3">
-                          <label className="text-[10px] font-bold text-slate-900 uppercase tracking-widest ml-1">Medicine & Essence</label>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                          <label style={{ fontSize: '0.625rem', fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--clr-warm-gray)' }}>Essence & Remedies</label>
                           <textarea 
-                            className="w-full p-5 bg-slate-50/50 border border-slate-100 rounded-2xl focus:ring-0 focus:outline-none focus:border-gold transition-all text-sm font-medium min-h-[80px] resize-none"
-                            placeholder="Spiritual remedies..."
+                            className="input-field"
+                            style={{ minHeight: '60px', resize: 'none', padding: '8px' }}
+                            placeholder="Essence / remedies..."
                             defaultValue={booking.medicine}
                             onBlur={(e) => updateSessionDetails(booking._id, { medicine: e.target.value })}
                           />
@@ -244,12 +340,13 @@ const UserManagement = () => {
                )}
             </div>
 
-            <div className="p-8 border-t border-slate-50 bg-white">
+            <div style={{ padding: '20px', borderTop: '1px solid var(--clr-border)' }}>
               <button 
                 onClick={() => setSessionModal(null)}
-                className="w-full py-5 bg-darkGreen text-white font-bold text-xs uppercase tracking-[0.2em] hover:bg-emerald-900 transition-all rounded-2xl"
+                className="btn-primary"
+                style={{ width: '100%', padding: '12px' }}
               >
-                Save Changes
+                Close protocols
               </button>
             </div>
           </div>
@@ -258,90 +355,124 @@ const UserManagement = () => {
 
       {/* User Details Modal */}
       {userDetailsModal && (
-        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-md z-[60] flex items-center justify-center p-4" onClick={() => setUserDetailsModal(null)}>
-          <div className="bg-white shadow-2xl w-full max-w-4xl max-h-[90vh] rounded-[2rem] flex flex-col overflow-hidden animate-in fade-in zoom-in duration-300" onClick={(e) => e.stopPropagation()}>
-            <div className="p-8 border-b border-slate-50 flex justify-between items-center bg-white sticky top-0 z-10 w-full min-h-[100px]">
+        <div style={{
+          position: 'fixed',
+          inset: 0,
+          zIndex: 100,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          padding: '24px',
+          background: 'rgba(13,26,14,0.4)',
+          backdropFilter: 'blur(4px)',
+        }}>
+          <div style={{
+            background: '#fff',
+            border: '1px solid var(--clr-border)',
+            width: '100%',
+            maxWidth: '800px',
+            maxHeight: '85vh',
+            borderRadius: 'var(--r-2xl)',
+            overflow: 'hidden',
+            display: 'flex',
+            flexDirection: 'column',
+            boxShadow: 'var(--shadow-xl)',
+          }}>
+            <div style={{ padding: '24px', borderBottom: '1px solid var(--clr-border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <div>
-                <h3 className="text-3xl font-serif font-bold text-slate-900">User Details</h3>
-                <p className="text-xs text-gold font-black uppercase tracking-[0.2em] mt-1">{userDetailsModal.user.name}</p>
+                <h3 style={{ fontFamily: 'var(--font-display)', fontSize: '1.5rem', fontWeight: 500, margin: 0 }}>Seeker Profile Summary</h3>
+                <p style={{ fontSize: '0.75rem', color: 'var(--clr-warm-gray)', marginTop: '4px' }}>Name: {userDetailsModal.user.name}</p>
               </div>
-              <button onClick={() => setUserDetailsModal(null)} className="text-slate-300 hover:text-rose-500 transition-colors">
-                <FaTimesCircle size={28} />
+              <button 
+                onClick={() => setUserDetailsModal(null)} 
+                style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '1.25rem', color: 'var(--clr-warm-gray)' }}
+              >
+                ✕
               </button>
             </div>
-            <div className="flex-1 p-8 overflow-y-auto bg-slate-50/30">
-              <div className="bg-white rounded-2xl border border-sage-100 p-6 mb-8 shadow-sm">
-                <h4 className="text-lg font-bold text-sage-900 mb-4 border-b pb-2 text-left">Profile Info</h4>
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-left">
-                  <div>
-                    <p className="text-xs text-sage-500 uppercase tracking-wider font-bold">Email</p>
-                    <p className="text-sm font-medium text-slate-700">{userDetailsModal.user.email}</p>
-                  </div>
-                  <div>
-                    <p className="text-xs text-sage-500 uppercase tracking-wider font-bold">Phone</p>
-                    <p className="text-sm font-medium text-slate-700">{userDetailsModal.user.phone || 'N/A'}</p>
-                  </div>
-                  <div>
-                    <p className="text-xs text-sage-500 uppercase tracking-wider font-bold">Location</p>
-                    <p className="text-sm font-medium text-slate-700">{userDetailsModal.user.lastLoginCountry || 'N/A'}</p>
-                  </div>
-                  <div>
-                    <p className="text-xs text-sage-500 uppercase tracking-wider font-bold">Total Investment</p>
-                    <p className="text-sm font-bold text-darkGreen">₹{(userDetailsModal.user.totalSpending || 0).toLocaleString()}</p>
-                  </div>
+            
+            <div style={{ flexGrow: 1, overflowY: 'auto', padding: '24px', display: 'flex', flexDirection: 'column', gap: '24px' }}>
+              {/* Account summary cards */}
+              <div style={{
+                background: 'var(--clr-forest-50)',
+                border: '1px solid var(--clr-border)',
+                borderRadius: 'var(--r-xl)',
+                padding: '24px',
+                display: 'grid',
+                gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))',
+                gap: '20px',
+              }}>
+                <div>
+                  <span style={{ fontSize: '0.5625rem', fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--clr-warm-gray)', display: 'block' }}>Email Primary</span>
+                  <span style={{ fontSize: '0.875rem', fontWeight: 600, color: 'var(--clr-ink)', marginTop: '2px', display: 'block' }}>{userDetailsModal.user.email}</span>
+                </div>
+                <div>
+                  <span style={{ fontSize: '0.5625rem', fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--clr-warm-gray)', display: 'block' }}>Mobile Contact</span>
+                  <span style={{ fontSize: '0.875rem', fontWeight: 600, color: 'var(--clr-ink)', marginTop: '2px', display: 'block' }}>{userDetailsModal.user.phone || 'N/A'}</span>
+                </div>
+                <div>
+                  <span style={{ fontSize: '0.5625rem', fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--clr-warm-gray)', display: 'block' }}>Logged Country</span>
+                  <span style={{ fontSize: '0.875rem', fontWeight: 600, color: 'var(--clr-ink)', marginTop: '2px', display: 'block' }}>{userDetailsModal.user.lastLoginCountry || 'N/A'}</span>
+                </div>
+                <div>
+                  <span style={{ fontSize: '0.5625rem', fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--clr-warm-gray)', display: 'block' }}>Overall Spent</span>
+                  <span style={{ fontSize: '0.875rem', fontWeight: 700, color: 'var(--clr-forest-750)', marginTop: '2px', display: 'block' }}>₹{(userDetailsModal.user.totalSpending || 0).toLocaleString()}</span>
                 </div>
               </div>
 
-              <h4 className="text-lg font-bold text-sage-900 mb-4 text-left">Booking History</h4>
-              <div className="space-y-4 text-left">
-                {userDetailsModal.bookings.length === 0 ? (
-                  <p className="text-center text-sage-500 italic py-8 bg-white rounded-2xl shadow-sm border border-sage-100">No booking history available.</p>
-                ) : (
-                  userDetailsModal.bookings.map((booking) => (
-                    <div key={booking._id} className="bg-white rounded-xl border border-sage-100 p-5 shadow-sm flex flex-col md:flex-row justify-between items-start md:items-center gap-4 transition-all hover:shadow-md">
-                      <div className="space-y-2">
-                        <div className="flex items-center gap-3 border-b border-sage-50 pb-2">
-                          <span className="font-bold text-sage-900">
-                            {new Date(booking.appointmentDate).toLocaleDateString(undefined, { dateStyle: 'medium' })}
+              {/* Bookings catalog list */}
+              <div>
+                <h4 style={{ fontFamily: 'var(--font-display)', fontSize: '1.25rem', fontWeight: 500, color: 'var(--clr-ink)', marginBottom: '16px' }}>Scheduled Session History</h4>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                  {userDetailsModal.bookings.length === 0 ? (
+                    <p style={{ textAlign: 'center', fontStyle: 'italic', padding: '24px', color: 'var(--clr-warm-gray)' }}>No reservation history recorded.</p>
+                  ) : (
+                    userDetailsModal.bookings.map((booking) => (
+                      <div 
+                        key={booking._id} 
+                        style={{
+                          background: '#fff',
+                          border: '1px solid var(--clr-border)',
+                          borderRadius: 'var(--r-lg)',
+                          padding: '16px 20px',
+                          display: 'flex',
+                          justifyContent: 'space-between',
+                          alignItems: 'center',
+                          flexWrap: 'wrap',
+                          gap: '12px',
+                        }}
+                      >
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                          <span style={{ fontSize: '0.875rem', fontWeight: 700, color: 'var(--clr-ink)' }}>
+                            {new Date(booking.appointmentDate).toLocaleDateString()} @ {booking.appointmentTime}
                           </span>
-                          <span className="text-sm text-gold font-bold bg-gold/10 px-2 py-0.5 rounded-lg border border-gold/20">@ {booking.appointmentTime}</span>
+                          <span style={{ fontSize: '0.8125rem', color: 'var(--clr-warm-gray)' }}>
+                            {booking.appointmentType} • {booking.callType} • {booking.duration} mins
+                          </span>
                         </div>
-                        <p className="text-sm text-sage-700 font-medium pt-1">
-                          {booking.appointmentType} • {booking.callType} • {booking.duration} mins
-                        </p>
-                      </div>
-                      <div className="flex flex-col items-start md:items-end gap-2 text-left md:text-right w-full md:w-auto mt-2 md:mt-0 pt-2 md:pt-0 border-t md:border-none border-sage-50">
-                        <div className="flex flex-wrap gap-2">
-                          <span className={`text-[10px] uppercase tracking-wider px-2.5 py-1 rounded font-bold border ${
-                            booking.bookingStatus === 'Accepted' ? 'bg-green-50 text-green-700 border-green-200' :
-                            booking.bookingStatus === 'Rejected' ? 'bg-red-50 text-red-700 border-red-200' :
-                            'bg-yellow-50 text-yellow-700 border-yellow-200'
-                          }`}>
-                            {booking.bookingStatus}
-                          </span>
-                          <span className={`text-[10px] uppercase tracking-wider px-2.5 py-1 rounded font-bold border ${
-                            booking.paymentStatus === 'Completed' ? 'bg-green-50 text-green-700 border-green-200' :
-                            booking.paymentStatus === 'Failed' ? 'bg-red-50 text-red-700 border-red-200' :
-                            'bg-yellow-50 text-yellow-700 border-yellow-200'
-                          }`}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap' }}>
+                          {getStatusBadge(booking.bookingStatus)}
+                          <span style={{ fontSize: '0.5625rem', fontWeight: 700, textTransform: 'uppercase', padding: '3px 8px', borderRadius: '4px', background: booking.paymentStatus === 'Completed' ? 'rgba(46,125,50,0.1)' : '#fffbeb', color: booking.paymentStatus === 'Completed' ? '#2e7d32' : '#b45309' }}>
                             Pay: {booking.paymentStatus}
                           </span>
+                          <span style={{ fontSize: '1rem', fontWeight: 750, color: 'var(--clr-ink)' }}>
+                            {booking.currencySymbol || '₹'} {booking.totalAmount?.toLocaleString() || booking.price?.toLocaleString()}
+                          </span>
                         </div>
-                        <span className="text-base font-black text-sage-900">
-                          {booking.currencySymbol || '₹'} {booking.totalAmount?.toLocaleString() || booking.price?.toLocaleString()}
-                        </span>
                       </div>
-                    </div>
-                  ))
-                )}
+                    ))
+                  )}
+                </div>
               </div>
             </div>
-            <div className="p-6 border-t border-slate-50 bg-white">
+            
+            <div style={{ padding: '20px', borderTop: '1px solid var(--clr-border)' }}>
                <button 
                  onClick={() => setUserDetailsModal(null)}
-                 className="w-full py-4 bg-sage-100 text-sage-900 font-black text-xs uppercase tracking-[0.2em] hover:bg-sage-200 transition-all rounded-xl"
+                 className="btn-secondary"
+                 style={{ width: '100%', padding: '12px' }}
                >
-                 Close Details
+                 Close details
                </button>
             </div>
           </div>

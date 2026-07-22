@@ -1,229 +1,253 @@
 import { motion } from 'framer-motion';
 import { Link } from 'react-router-dom';
-import { FaMoon, FaSun, FaSeedling, FaBookOpen, FaHandSparkles, FaBell, FaGem } from 'react-icons/fa';
 
 const expertiseData = [
   {
-    icon: <FaMoon className="text-3xl" />,
+    icon: '🔮',
     title: 'Full Moon Day Healing Sessions',
     description:
-      'Baghya conducts powerful healing sessions on full moon days, leveraging the heightened energy during this time. These sessions are designed to help individuals release negativity, manifest their desires, and experience deep spiritual cleansing.',
+      'Baghya conducts powerful healing sessions on full moon days, leveraging the heightened energy during this time. These sessions help individuals release negativity, manifest desires, and experience deep spiritual cleansing.',
   },
   {
-    icon: <FaSun className="text-3xl" />,
+    icon: '🌅',
     title: 'Brahmamuhurta Healing Sessions',
     description:
-      'She organizes early morning healing sessions during the sacred Brahmamuhurta (the pre-dawn hours). This time is considered highly auspicious for spiritual practices, and her sessions focus on enhancing mental clarity, peace, and spiritual growth.',
+      'Early morning healing sessions during the sacred pre-dawn hours (Brahmamuhurta). This time is considered highly auspicious for spiritual alignment, mental clarity, and internal calm.',
   },
   {
-    icon: <FaSeedling className="text-3xl" />,
-    title: 'Bach Flower Medicine Certified Practitioner',
+    icon: '🌸',
+    title: 'Bach Flower Medicine certified',
     description:
-      'Baghya is certified in Bach Flower Therapy, a natural remedy system that uses flower essences to balance emotions and improve mental well-being. She provides personalized Bach Flower consultations to support emotional healing.',
+      'Qualified in Bach Flower Therapy, a natural remedy system that uses flower essences to balance emotions, resolve deep inner stress, and improve mental and emotional alignment.',
   },
   {
-    icon: <FaBookOpen className="text-3xl" />,
-    title: 'Angel Card & Tarot Card Reading Classes with Certification',
+    icon: '🃏',
+    title: 'Angel Card & Tarot Readings',
     description:
-      'Baghya teaches comprehensive Angel Card and Tarot Card reading courses. These classes are designed for beginners and advanced learners, equipping them with the skills to interpret cards and provide readings. Participants receive certificates upon completion.',
+      'Baghya teaches comprehensive interpretive reading systems. The course certifies participants on completion to offer professional energy readings and divine translation.',
   },
   {
-    icon: <FaHandSparkles className="text-3xl" />,
-    title: 'Renowned Lama Fera Healer',
+    icon: '✨',
+    title: 'Lama Fera healing practitioner',
     description:
-      'Baghya is a skilled practitioner of Lama Fera, a Tibetan healing technique known for its ability to cleanse negativity and promote physical, emotional, and spiritual healing.',
+      'Mastery in Lama Fera, a powerful ancient Tibetan system designed to actively clear negative fields and restore physical, emotional, and spiritual balance.',
   },
   {
-    icon: <FaBell className="text-3xl" />,
-    title: 'Expert in Singing Bowl Sound Healing',
+    icon: '🔔',
+    title: 'Singing Bowl sound restoration',
     description:
-      'She specializes in sound healing using singing bowls. These sessions use harmonic vibrations to induce relaxation, reduce stress, and promote overall well-being.',
-  },
-  {
-    icon: <FaGem className="text-3xl" />,
-    title: 'Energized Crystals',
-    description:
-      'Baghya gives energized crystals online in various forms, including jewelry, clusters, and tumbled stones. These crystals are infused with healing energy and tailored to her followers\' specific needs, helping them attract positivity, prosperity, and spiritual growth.',
+      'Harnessing custom harmonic resonance and acoustic frequencies to guide brainwaves, dissolve physical stress, and introduce deep energetic restoration.',
   },
 ];
 
 const fadeInUp = {
-  hidden: { opacity: 0, y: 40 },
+  hidden: { opacity: 0, y: 32 },
   visible: (i = 0) => ({
     opacity: 1,
     y: 0,
-    transition: { duration: 0.6, delay: i * 0.1, ease: [0.25, 0.46, 0.45, 0.94] },
+    transition: { duration: 0.6, delay: i * 0.08, ease: [0.16, 1, 0.3, 1] },
   }),
 };
 
 const About = () => {
   return (
-    <div className="bg-sage-50 min-h-screen">
-      {/* ─── Hero Banner ─── */}
-      <section className="relative h-[70vh] min-h-[480px] flex items-center justify-center overflow-hidden">
-        <div className="absolute inset-0">
-          <img
-            src="/about-hero.png"
-            alt="Zeal Healing spiritual atmosphere"
-            className="w-full h-full object-cover"
-          />
-          <div className="absolute inset-0 bg-gradient-to-b from-sage-900/60 via-sage-900/40 to-sage-50" />
-        </div>
+    <div style={{ background: 'var(--clr-parchment)', minHeight: '100svh' }}>
+      
+      {/* ── Custom CSS Injection ── */}
+      <style dangerouslySetInnerHTML={{__html: `
+        .founder-grid {
+          display: grid;
+          grid-template-columns: 1fr 1.2fr;
+          gap: 60px;
+          align-items: center;
+        }
+        .founder-image-wrapper {
+          position: relative;
+          border-radius: var(--r-2xl);
+          overflow: hidden;
+          width: 100%;
+          max-width: 380px;
+          aspect-ratio: 3/4;
+          border: 1px solid var(--clr-border);
+          box-shadow: var(--shadow-md);
+          justify-self: center;
+        }
+        @media (max-width: 992px) {
+          .founder-grid {
+            grid-template-columns: 1fr;
+            gap: 40px;
+            text-align: center;
+          }
+          .founder-image-wrapper {
+            max-width: 320px;
+            margin: 0 auto;
+          }
+        }
+      `}} />
+      
+      {/* ─── Hero Section ─── */}
+      <section style={{
+        position: 'relative',
+        height: '60vh',
+        minHeight: '440px',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        overflow: 'hidden',
+        background: 'var(--clr-forest-900)',
+      }}>
+        <div style={{ position: 'absolute', inset: 0, backgroundImage: 'url("/about-hero.png")', backgroundSize: 'cover', backgroundPosition: 'center', filter: 'brightness(0.4)' }} />
+        <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to bottom, transparent 30%, var(--clr-parchment))' }} />
 
         <motion.div
-          initial={{ opacity: 0, y: 30 }}
+          initial={{ opacity: 0, y: 24 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.9 }}
-          className="relative z-10 text-center px-4 max-w-3xl"
+          transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
+          style={{ position: 'relative', zIndex: 1, textAlign: 'center', padding: '0 24px', maxWidth: '800px' }}
         >
-          <h1 className="text-4xl md:text-6xl font-serif font-bold text-white mb-4 drop-shadow-lg leading-tight">
-            About Us
+          <h1 style={{ fontFamily: 'var(--font-display)', fontSize: '3.5rem', fontWeight: 500, color: 'var(--clr-ink)', letterSpacing: '-0.02em', marginBottom: '16px' }}>
+            Our Sanctuary
           </h1>
-          <p className="text-lg md:text-xl text-white/90 font-medium leading-relaxed drop-shadow-md">
-            Discover the heart behind Zeal Healing &mdash; a sanctuary dedicated to holistic well-being and spiritual growth.
+          <p style={{ fontSize: '1.0625rem', color: 'var(--clr-ink-muted)', lineHeight: 1.6, maxWidth: '580px', margin: '0 auto' }}>
+            Learn about Zeal Healing: an editorial space curated to guide the modern seeker toward internal resonance, light, and restoration.
           </p>
         </motion.div>
       </section>
 
-      {/* ─── Founder Section ─── */}
-      <section className="py-20 md:py-28">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-20 items-center">
+      {/* ─── Founder Spotlight ─── */}
+      <section style={{ padding: '80px 24px 100px' }}>
+        <div style={{ maxWidth: '1280px', margin: '0 auto' }}>
+          <div className="founder-grid">
+            
             {/* Image Column */}
             <motion.div
-              initial={{ opacity: 0, x: -50 }}
+              initial={{ opacity: 0, x: -24 }}
               whileInView={{ opacity: 1, x: 0 }}
               viewport={{ once: true }}
-              transition={{ duration: 0.8 }}
-              className="relative order-2 lg:order-1"
+              transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
+              style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', position: 'relative' }}
             >
-              <div className="relative z-10 rounded-2xl overflow-hidden shadow-2xl border-[12px] border-white max-w-md mx-auto">
+              <div className="founder-image-wrapper">
                 <img 
                   src="/founder.jpg" 
                   alt="Baghya Ashok - Founder of Zeal Healing" 
-                  className="w-full h-full object-cover"
+                  style={{ width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'center 15%' }}
                 />
               </div>
-              {/* Decorative elements */}
-              <div className="absolute -top-10 -left-10 w-40 h-40 bg-sage-200/50 rounded-full mix-blend-multiply filter blur-2xl opacity-70" />
-              <div className="absolute -bottom-10 -right-10 w-40 h-40 bg-darkGreen/10 rounded-full mix-blend-multiply filter blur-2xl opacity-70" />
             </motion.div>
 
-            {/* Text Column */}
+            {/* Content Column */}
             <motion.div
               initial="hidden"
               whileInView="visible"
-              viewport={{ once: true, margin: '-80px' }}
+              viewport={{ once: true, margin: '-60px' }}
               variants={fadeInUp}
-              className="order-1 lg:order-2 flex flex-col justify-center text-center lg:text-left"
+              style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center' }}
             >
-              <span className="inline-block text-sm font-semibold uppercase tracking-widest text-darkGreen mb-3">
-                Our Founder
+              <span className="section-eyebrow" style={{ marginBottom: '12px' }}>
+                MEET THE FOUNDER
               </span>
-              <h2 className="text-3xl md:text-5xl font-serif font-bold text-sage-900 mb-6 leading-tight">
+              <h2 style={{ fontFamily: 'var(--font-display)', fontSize: '2.75rem', fontWeight: 500, color: 'var(--clr-ink)', letterSpacing: '-0.02em', marginBottom: '24px' }}>
                 Baghya Ashok
               </h2>
-              <div className="w-16 h-1 bg-darkGreen rounded-full mb-8 mx-auto lg:mx-0" />
-              <p className="text-sage-800 text-lg leading-relaxed mb-6">
-                Baghya Ashok is a distinguished <strong className="text-sage-900">Reiki Grand Master</strong> and a premier <strong className="text-sage-900">Tarot and Angel Card reader</strong> based in Navi Mumbai, India. She is the founder, director, and CEO of Zeal Healing, an organization dedicated to promoting well-being through various healing modalities.
+              <p style={{ fontSize: '1rem', color: 'var(--clr-ink-muted)', lineHeight: 1.75, marginBottom: '20px' }}>
+                Baghya Ashok is a distinguished <strong style={{ color: 'var(--clr-ink)', fontWeight: 600 }}>Reiki Grand Master</strong> and a premier <strong style={{ color: 'var(--clr-ink)', fontWeight: 600 }}>Tarot and Angel Card reader</strong> based in Navi Mumbai. She founded, directs, and leads Zeal Healing as a space focused on energy transformation.
               </p>
-              <p className="text-sage-700 leading-relaxed font-medium">
-                With years of profound experience in energy healing, spiritual consultation, and holistic wellness, Baghya has empowered countless individuals on their journey toward inner peace, clarity, and transformation.
+              <p style={{ fontSize: '0.9375rem', color: 'var(--clr-warm-gray)', lineHeight: 1.7, fontStyle: 'italic' }}>
+                "We hold the path to restoration deep inside ourselves. Healing is simply a matter of identifying the resonance that unlocks that path. Through reiki, crystals, and intuitive tarot, we help you clear the static to reveal your authentic inner wisdom."
               </p>
             </motion.div>
+
           </div>
         </div>
       </section>
 
-      {/* ─── Expertise Section ─── */}
-      <section className="py-20 md:py-28 bg-white/60 backdrop-blur-sm">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <motion.div
-            initial="hidden"
-            whileInView="visible"
-            viewport={{ once: true, margin: '-60px' }}
-            variants={fadeInUp}
-            className="text-center mb-16"
-          >
-            <span className="inline-block text-sm font-semibold uppercase tracking-widest text-darkGreen mb-3">
-              What We Offer
-            </span>
-            <h2 className="text-3xl md:text-5xl font-serif font-bold text-sage-900 mb-4">
-              Baghya Ashok's Expertise
+      {/* ─── Experience and Offerings ─── */}
+      <section style={{ background: '#fff', borderTop: '1px solid var(--clr-border)', borderBottom: '1px solid var(--clr-border)', padding: '100px 24px' }}>
+        <div style={{ maxWidth: '1280px', margin: '0 auto' }}>
+          
+          <div style={{ textAlign: 'center', marginBottom: '64px' }}>
+            <span className="section-eyebrow" style={{ marginBottom: '12px' }}>Our Disciplines</span>
+            <h2 style={{ fontFamily: 'var(--font-display)', fontSize: '2.75rem', fontWeight: 500, color: 'var(--clr-ink)', letterSpacing: '-0.02em', marginBottom: '16px' }}>
+              Expertise & Modalities
             </h2>
-            <div className="w-16 h-1 bg-darkGreen rounded-full mx-auto mt-4 mb-6" />
-            <p className="text-sage-700 max-w-2xl mx-auto text-lg leading-relaxed">
-              Explore a wide range of healing modalities and spiritual services, each crafted to nurture your mind, body, and soul.
+            <p style={{ fontSize: '1rem', color: 'var(--clr-warm-gray)', maxWidth: '580px', margin: '0 auto', lineHeight: 1.6 }}>
+              A handpicked selection of spiritual practices designed to restore emotional, mental, and energetic balance.
             </p>
-          </motion.div>
+          </div>
 
-          {/* Expertise Cards Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {expertiseData.map((item, index) => (
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: '24px' }}>
+            {expertiseData.map((item, idx) => (
               <motion.div
-                key={index}
+                key={idx}
                 initial="hidden"
                 whileInView="visible"
                 viewport={{ once: true, margin: '-40px' }}
                 variants={fadeInUp}
-                custom={index}
-                className="group"
+                custom={idx}
+                style={{
+                  background: 'var(--clr-parchment)',
+                  border: '1px solid var(--clr-border)',
+                  borderRadius: 'var(--r-xl)',
+                  padding: '36px',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: '20px',
+                  boxShadow: 'var(--shadow-sm)',
+                }}
               >
-                <div className="h-full bg-white rounded-2xl p-8 shadow-sm border border-sage-100 transition-all duration-300 hover:shadow-xl hover:border-darkGreen/20 hover:-translate-y-1">
-                  {/* Icon */}
-                  <div className="w-14 h-14 rounded-xl bg-sage-100 flex items-center justify-center text-darkGreen mb-5 transition-all duration-300 group-hover:bg-darkGreen group-hover:text-white group-hover:shadow-lg group-hover:shadow-darkGreen/20">
-                    {item.icon}
-                  </div>
-                  {/* Title */}
-                  <h3 className="text-xl font-serif font-bold text-sage-900 mb-3 leading-snug">
+                <div style={{
+                  width: 48, height: 48,
+                  borderRadius: 'var(--r-lg)',
+                  background: '#fff',
+                  border: '1px solid var(--clr-border)',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  fontSize: '1.25rem',
+                }}>
+                  {item.icon}
+                </div>
+                <div>
+                  <h3 style={{ fontFamily: 'var(--font-display)', fontSize: '1.375rem', fontWeight: 500, color: 'var(--clr-ink)', marginBottom: '8px' }}>
                     {item.title}
                   </h3>
-                  {/* Description */}
-                  <p className="text-sage-700 leading-relaxed text-[0.95rem]">
+                  <p style={{ fontSize: '0.875rem', color: 'var(--clr-warm-gray)', lineHeight: 1.6 }}>
                     {item.description}
                   </p>
                 </div>
               </motion.div>
             ))}
           </div>
+
         </div>
       </section>
 
-      {/* ─── Mission / Values Strip ─── */}
-      <section className="py-20 md:py-24">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <motion.div
-            initial="hidden"
-            whileInView="visible"
-            viewport={{ once: true, margin: '-60px' }}
-            variants={fadeInUp}
-            className="text-center mb-14"
-          >
-            <span className="inline-block text-sm font-semibold uppercase tracking-widest text-darkGreen mb-3">
-              Our Mission
-            </span>
-            <h2 className="text-3xl md:text-5xl font-serif font-bold text-sage-900 mb-4">
-              Why Zeal Healing?
+      {/* ─── Philosophy pillars ─── */}
+      <section style={{ padding: '100px 24px' }}>
+        <div style={{ maxWidth: '1280px', margin: '0 auto' }}>
+          
+          <div style={{ textAlign: 'center', marginBottom: '64px' }}>
+            <span className="section-eyebrow" style={{ marginBottom: '12px' }}>OUR PHILOSOPHY</span>
+            <h2 style={{ fontFamily: 'var(--font-display)', fontSize: '2.75rem', fontWeight: 500, color: 'var(--clr-ink)', letterSpacing: '-0.02em' }}>
+              Why Choose Zeal Healing?
             </h2>
-            <div className="w-16 h-1 bg-darkGreen rounded-full mx-auto mt-4" />
-          </motion.div>
+          </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '24px' }}>
             {[
               {
-                number: '01',
-                heading: 'Holistic Approach',
-                text: 'We address the whole person — mind, body, and spirit — through time-tested healing modalities from around the world.',
+                id: '01',
+                title: 'Holistic alignment',
+                desc: 'We address the soul, the intelligence, and the biology in tandem, realizing that true health and clarity starts from a unified core.',
               },
               {
-                number: '02',
-                heading: 'Certified Expertise',
-                text: 'All our practices are backed by years of training, certifications, and real-world experience helping thousands of individuals.',
+                id: '02',
+                title: 'Certified guidance',
+                desc: 'Years of professional initiation, credentials, and practice with thousands of seekers ensure consistent, safe, and deeply felt energy work.',
               },
               {
-                number: '03',
-                heading: 'Personal Transformation',
-                text: 'Every session, class, and crystal is designed to empower you on your unique journey toward inner peace and spiritual awakening.',
+                id: '03',
+                title: 'Personalized integration',
+                desc: 'Each session, custom crystal, or course certificate is individually tuned to validate and scale with your specific path and timeline.',
               },
             ].map((item, i) => (
               <motion.div
@@ -233,64 +257,80 @@ const About = () => {
                 viewport={{ once: true, margin: '-40px' }}
                 variants={fadeInUp}
                 custom={i}
-                className="relative bg-gradient-to-br from-sage-100/70 to-white rounded-2xl p-8 border border-sage-200/60 overflow-hidden group hover:shadow-lg transition-shadow duration-300"
+                style={{
+                  background: '#fff',
+                  border: '1px solid var(--clr-border)',
+                  borderRadius: 'var(--r-xl)',
+                  padding: '40px',
+                  position: 'relative',
+                  overflow: 'hidden',
+                  boxShadow: 'var(--shadow-sm)',
+                }}
               >
-                <span className="absolute -top-4 -right-2 text-[7rem] font-serif font-bold text-sage-200/40 leading-none select-none pointer-events-none group-hover:text-darkGreen/10 transition-colors duration-500">
-                  {item.number}
+                <span style={{
+                  position: 'absolute',
+                  top: '-10px',
+                  right: '-10px',
+                  fontSize: '5.5rem',
+                  fontFamily: 'var(--font-display)',
+                  fontWeight: 600,
+                  color: 'var(--clr-forest-50)',
+                  lineHeight: 1,
+                  userSelect: 'none',
+                  pointerEvents: 'none',
+                }}>
+                  {item.id}
                 </span>
-                <h3 className="text-xl font-serif font-bold text-sage-900 mb-3 relative z-10">
-                  {item.heading}
+                <h3 style={{ fontFamily: 'var(--font-display)', fontSize: '1.5rem', fontWeight: 500, color: 'var(--clr-ink)', marginBottom: '12px', position: 'relative', zIndex: 1 }}>
+                  {item.title}
                 </h3>
-                <p className="text-sage-700 leading-relaxed relative z-10">
-                  {item.text}
+                <p style={{ fontSize: '0.875rem', color: 'var(--clr-warm-gray)', lineHeight: 1.6, position: 'relative', zIndex: 1 }}>
+                  {item.desc}
                 </p>
               </motion.div>
             ))}
           </div>
+
         </div>
       </section>
 
-      {/* ─── CTA Section ─── */}
-      <section className="py-20 md:py-24 bg-darkGreen relative overflow-hidden">
-        {/* Decorative blobs */}
-        <div className="absolute top-0 left-0 w-72 h-72 bg-white/5 rounded-full blur-3xl -translate-x-1/2 -translate-y-1/2" />
-        <div className="absolute bottom-0 right-0 w-96 h-96 bg-white/5 rounded-full blur-3xl translate-x-1/3 translate-y-1/3" />
-
-        <motion.div
-          initial="hidden"
-          whileInView="visible"
-          viewport={{ once: true }}
-          variants={fadeInUp}
-          className="max-w-3xl mx-auto text-center px-4 relative z-10"
-        >
-          <h2 className="text-3xl md:text-5xl font-serif font-bold text-white mb-6 leading-tight">
-            Begin Your Healing Journey Today
+      {/* ─── Call to Action ─── */}
+      <section style={{
+        background: 'var(--clr-forest-900)',
+        color: '#fff',
+        position: 'relative',
+        overflow: 'hidden',
+        padding: '100px 24px',
+        textAlign: 'center',
+      }}>
+        {/* Glow */}
+        <div style={{ position: 'absolute', inset: 0, background: 'radial-gradient(circle at center, rgba(165,214,167,0.1) 0%, transparent 70%)', pointerEvents: 'none' }} />
+        
+        <div style={{ position: 'relative', zIndex: 1, maxWidth: '720px', margin: '0 auto' }}>
+          <h2 style={{ fontFamily: 'var(--font-display)', fontSize: '3rem', fontWeight: 500, color: '#fff', letterSpacing: '-0.02em', marginBottom: '20px' }}>
+            Initiate Your Session
           </h2>
-          <p className="text-white/80 text-lg leading-relaxed mb-10 max-w-xl mx-auto">
-            Whether you seek clarity through Tarot, peace through Reiki, or transformation through sound healing — we're here to guide you every step of the way.
+          <p style={{ fontSize: '1.0625rem', color: 'rgba(255,255,255,0.7)', lineHeight: 1.7, marginBottom: '40px' }}>
+            Book an intuitive reading, reserve a space in our upcoming certified crystal classes, or find balance through custom energy alignments.
           </p>
-          <div className="flex flex-col sm:flex-row gap-4 justify-center">
+          <div style={{ display: 'inline-flex', flexWrap: 'wrap', gap: '16px', justifyContent: 'center' }}>
             <Link to="/sessions">
-              <motion.button
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.97 }}
-                className="bg-white text-darkGreen px-8 py-3.5 rounded-full font-semibold text-lg transition-all hover:shadow-xl hover:shadow-white/20"
-              >
-                Book a Session
-              </motion.button>
+              <button className="btn-primary" style={{ background: '#fff', color: 'var(--clr-forest-900)', padding: '0 32px' }}>
+                Consultations
+              </button>
             </Link>
             <Link to="/classes">
-              <motion.button
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.97 }}
-                className="border-2 border-white/40 text-white px-8 py-3.5 rounded-full font-semibold text-lg transition-all hover:bg-white/10 hover:border-white/60"
+              <button className="btn-secondary" style={{ borderColor: 'rgba(255,255,255,0.2)', color: '#fff', padding: '0 32px' }}
+                onMouseEnter={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.06)'; }}
+                onMouseLeave={e => { e.currentTarget.style.background = 'none'; }}
               >
                 Explore Classes
-              </motion.button>
+              </button>
             </Link>
           </div>
-        </motion.div>
+        </div>
       </section>
+
     </div>
   );
 };

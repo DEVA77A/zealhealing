@@ -3,9 +3,8 @@ import axios from 'axios';
 import { toast } from 'react-toastify';
 import { useAuth } from '../../context/AuthContext';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
-import { FaFilter } from 'react-icons/fa';
 
-const COLORS = ['#2E7D32', '#538253', '#a1bfa1', '#e3ebe3'];
+const COLORS = ['#208a74', '#2ca289', '#46b89f', '#74ccb7'];
 
 const DashboardOverview = () => {
   const [stats, setStats] = useState(null);
@@ -29,32 +28,53 @@ const DashboardOverview = () => {
     fetchStats();
   }, [getToken, timeRange]);
 
-  if (loading && !stats) return <div className="p-8 text-center text-sage-600">Loading Dashboard...</div>;
+  if (loading && !stats) {
+    return (
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '120px 0' }}>
+        <div className="spinner" style={{ width: 28, height: 28 }} />
+      </div>
+    );
+  }
   if (!stats) return null;
 
   const { overview, charts, topClasses } = stats;
 
   const rankMedal = (rank) => {
-    if (rank === 1) return { emoji: '🥇', bg: 'bg-yellow-50', text: 'text-yellow-600', border: 'border-yellow-100' };
-    if (rank === 2) return { emoji: '🥈', bg: 'bg-slate-50', text: 'text-slate-500', border: 'border-slate-100' };
-    if (rank === 3) return { emoji: '🥉', bg: 'bg-orange-50', text: 'text-orange-500', border: 'border-orange-100' };
-    return { emoji: `#${rank}`, bg: 'bg-sage-50', text: 'text-sage-600', border: 'border-sage-100' };
+    if (rank === 1) return { emoji: '#1', bg: 'rgba(217, 119, 6, 0.08)', text: '#d97706', border: '1px solid #fcd34d' };
+    if (rank === 2) return { emoji: '#2', bg: 'rgba(100, 116, 139, 0.08)', text: '#64748b', border: '1px solid #cbd5e1' };
+    if (rank === 3) return { emoji: '#3', bg: 'rgba(194, 65, 12, 0.08)', text: '#c2410c', border: '1px solid #fed7aa' };
+    return { emoji: `#${rank}`, bg: 'var(--clr-forest-50)', text: 'var(--clr-warm-gray)', border: '1px solid var(--clr-border)' };
   };
 
   return (
-    <div className="space-y-6 pb-12">
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '32px', paddingBottom: '80px' }}>
+      
+      {/* Head section */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '20px' }}>
         <div>
-          <h2 className="text-3xl font-serif font-bold text-sage-900">Dashboard</h2>
-          <p className="text-sm text-sage-500 mt-1">Operational insights and performance metrics</p>
+          <h2 style={{ fontFamily: 'var(--font-display)', fontSize: '2.5rem', fontWeight: 500, color: 'var(--clr-ink)', letterSpacing: '-0.02em', marginBottom: '4px' }}>
+            Dashboard Overview
+          </h2>
+          <p style={{ fontSize: '0.9375rem', color: 'var(--clr-warm-gray)' }}>A summary review of the clinic operations, revenue channels, and visitor actions.</p>
         </div>
         
-        <div className="relative group">
-          <FaFilter className="absolute left-3 top-1/2 transform -translate-y-1/2 text-sage-400" />
+        <div style={{ position: 'relative' }}>
           <select 
             value={timeRange} 
             onChange={e => { setLoading(true); setTimeRange(e.target.value); }}
-            className="pl-10 pr-10 py-2 bg-white border border-sage-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-sage-500 appearance-none font-medium text-sage-700 shadow-sm transition-all cursor-pointer hover:border-sage-300 text-sm"
+            style={{
+              padding: '10px 36px 10px 16px',
+              background: '#fff',
+              border: '1.5px solid var(--clr-border-strong)',
+              borderRadius: 'var(--r-md)',
+              fontFamily: 'var(--font-body)',
+              fontSize: '0.875rem',
+              fontWeight: 700,
+              color: 'var(--clr-forest-750)',
+              outline: 'none',
+              cursor: 'pointer',
+              appearance: 'none',
+            }}
           >
             <option value="all">All Time</option>
             <option value="7">Last 7 Days</option>
@@ -62,73 +82,140 @@ const DashboardOverview = () => {
             <option value="90">Last 3 Months</option>
             <option value="365">Last Year</option>
           </select>
+          <span style={{ position: 'absolute', right: '16px', top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none', fontSize: '0.75rem', color: 'var(--clr-warm-gray)' }}>▼</span>
         </div>
       </div>
       
       {/* Top Metrics Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '24px' }}>
         {[
-          { label: 'Total Revenue', value: `₹${overview.totalRevenue.toLocaleString()}` },
-          { label: 'Monthly Revenue', value: `₹${overview.monthlyRevenue.toLocaleString()}` },
-          { label: 'Total Bookings', value: overview.totalBookings },
-          { label: 'Total Users', value: overview.totalUsers },
+          { label: 'Total Revenue', value: `₹${overview.totalRevenue.toLocaleString()}`, dark: true },
+          { label: 'Monthly Revenue', value: `₹${overview.monthlyRevenue.toLocaleString()}`, dark: false },
+          { label: 'Total Bookings', value: overview.totalBookings, dark: false },
+          { label: 'Total Users', value: overview.totalUsers, dark: false },
         ].map((item, idx) => (
-          <div key={idx} className={`rounded-xl border p-6 flex flex-col justify-center transition-all ${idx === 0 ? 'bg-darkGreen border-darkGreen shadow-md' : 'bg-white border-sage-100 shadow-sm'}`}>
-            <h3 className={`text-xs font-bold uppercase tracking-wider mb-2 ${idx === 0 ? 'text-sage-200' : 'text-sage-500'}`}>{item.label}</h3>
-            <p className={`text-3xl font-bold font-serif ${idx === 0 ? 'text-white' : 'text-sage-900'}`}>{item.value}</p>
+          <div key={idx} style={{
+            background: item.dark ? 'var(--clr-forest-700)' : '#fff',
+            border: item.dark ? '1px solid var(--clr-forest-700)' : '1px solid var(--clr-border)',
+            borderRadius: 'var(--r-xl)',
+            padding: '32px',
+            boxShadow: 'var(--shadow-sm)',
+            display: 'flex',
+            flexDirection: 'column',
+          }}>
+            <h3 style={{
+              fontSize: '0.625rem',
+              fontWeight: 700,
+              letterSpacing: '0.12em',
+              textTransform: 'uppercase',
+              color: item.dark ? 'rgba(255,255,255,0.6)' : 'var(--clr-warm-gray)',
+              marginBottom: '8px',
+            }}>
+              {item.label}
+            </h3>
+            <p style={{
+              fontFamily: 'var(--font-display)',
+              fontSize: '2.25rem',
+              fontWeight: 600,
+              color: item.dark ? '#fff' : 'var(--clr-forest-750)',
+              lineHeight: 1.1,
+            }}>
+              {item.value}
+            </p>
           </div>
         ))}
       </div>
 
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
+      {/* Grid secondary stats */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '20px' }}>
         {[
           { label: "Today's Revenue", val: overview.todaysRevenue, prefix: '₹', highlight: true },
           { label: 'Pending Bookings', val: overview.pendingBookings, prefix: '', highlight: false },
           { label: 'Completed Sessions', val: overview.completedSessions, prefix: '', highlight: false },
           { label: 'Classes Sold', val: overview.totalClassesSold, prefix: '', highlight: false },
         ].map((s, i) => (
-          <div key={i} className="bg-white rounded-xl p-5 border border-sage-100 shadow-sm flex flex-col transition-all hover:bg-sage-50/50">
-            <span className="text-xs font-bold text-sage-500 uppercase tracking-wider mb-1">{s.label}</span>
-            <span className={`text-xl font-bold ${s.highlight ? 'text-darkGreen' : 'text-sage-900'}`}>{s.prefix}{s.val.toLocaleString()}</span>
+          <div key={i} style={{
+            background: '#fff',
+            border: '1px solid var(--clr-border)',
+            borderRadius: 'var(--r-lg)',
+            padding: '20px',
+            boxShadow: 'var(--shadow-sm)',
+          }}>
+            <span style={{ fontSize: '0.625rem', fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase', color: 'var(--clr-warm-gray)', display: 'block', marginBottom: '4px' }}>
+              {s.label}
+            </span>
+            <span style={{
+              fontSize: '1.25rem',
+              fontWeight: 700,
+              color: s.highlight ? 'var(--clr-forest-700)' : 'var(--clr-ink)',
+            }}>
+              {s.prefix}{s.val.toLocaleString()}
+            </span>
           </div>
         ))}
       </div>
 
       {/* Visual Analytics */}
-      <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
-        <div className="lg:col-span-3 bg-white rounded-xl shadow-sm border border-sage-100 p-8 overflow-hidden relative">
-          <div className="mb-8">
-            <h3 className="text-xl font-serif font-bold text-sage-900">Revenue Growth</h3>
-            <p className="text-sm text-sage-500 mt-1">Performance over last 6 months</p>
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '24px' }} className="lg:grid-cols-5">
+        <div style={{
+          gridColumn: 'span 3',
+          background: '#fff',
+          border: '1px solid var(--clr-border)',
+          borderRadius: 'var(--r-xl)',
+          padding: '40px',
+          boxShadow: 'var(--shadow-sm)',
+        }} className="lg:col-span-3">
+          <div style={{ marginBottom: '32px' }}>
+            <h3 style={{ fontFamily: 'var(--font-display)', fontSize: '1.375rem', fontWeight: 500, color: 'var(--clr-ink)' }}>
+              Revenue Performance
+            </h3>
+            <p style={{ fontSize: '0.8125rem', color: 'var(--clr-warm-gray)', marginTop: '2px' }}>
+              Historical cash inflows over the trailing 6 months.
+            </p>
           </div>
-          <div className="h-80 -ml-6">
+          <div style={{ height: 280, marginLeft: '-20px' }}>
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={charts.revenueChart}>
-                <CartesianGrid strokeDasharray="4 4" vertical={false} stroke="#E3EBE3" />
-                <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{fill: '#759E75', fontSize: 11, fontWeight: 600}} dy={10} />
-                <YAxis axisLine={false} tickLine={false} tick={{fill: '#759E75', fontSize: 11, fontWeight: 600}} dx={-10} />
+                <CartesianGrid strokeDasharray="4 4" vertical={false} stroke="var(--clr-border)" />
+                <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{fill: 'var(--clr-warm-gray)', fontSize: 10, fontWeight: 700}} dy={10} />
+                <YAxis axisLine={false} tickLine={false} tick={{fill: 'var(--clr-warm-gray)', fontSize: 10, fontWeight: 700}} dx={-10} />
                 <Tooltip 
-                  cursor={{fill: '#F4F7F4'}} 
-                  contentStyle={{borderRadius: '12px', border: '1px solid #C7D9C7', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)', padding: '12px', fontSize: '13px'}}
+                  cursor={{fill: 'var(--clr-forest-50)'}} 
+                  contentStyle={{borderRadius: 'var(--r-md)', border: '1px solid var(--clr-border)', boxShadow: 'var(--shadow-sm)', padding: '12px', fontSize: '12px', fontFamily: 'var(--font-body)'}}
                 />
-                <Bar dataKey="revenue" fill="#2E7D32" radius={[6, 6, 6, 6]} barSize={28} />
+                <Bar dataKey="revenue" fill="var(--clr-forest-700)" radius={[4, 4, 0, 0]} barSize={24} />
               </BarChart>
             </ResponsiveContainer>
           </div>
         </div>
 
-        <div className="lg:col-span-2 bg-white rounded-xl shadow-sm border border-sage-100 p-8 flex flex-col">
-          <h3 className="text-xl font-serif font-bold text-sage-900 mb-2">Global Reach</h3>
-          <p className="text-sm text-sage-500 mb-8">Sales distribution by country</p>
-          <div className="flex-1 flex items-center justify-center min-h-[300px]">
-            <ResponsiveContainer width="100%" height="100%">
+        <div style={{
+          gridColumn: 'span 2',
+          background: '#fff',
+          border: '1px solid var(--clr-border)',
+          borderRadius: 'var(--r-xl)',
+          padding: '40px',
+          boxShadow: 'var(--shadow-sm)',
+          display: 'flex',
+          flexDirection: 'column',
+        }} className="lg:col-span-2">
+          <div style={{ marginBottom: '24px' }}>
+            <h3 style={{ fontFamily: 'var(--font-display)', fontSize: '1.375rem', fontWeight: 500, color: 'var(--clr-ink)' }}>
+              Geographic Division
+            </h3>
+            <p style={{ fontSize: '0.8125rem', color: 'var(--clr-warm-gray)', marginTop: '2px' }}>
+              Sales split distribution mapping country segment values.
+            </p>
+          </div>
+          <div style={{ flexGrow: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '200px' }}>
+            <ResponsiveContainer width="100%" height={240}>
               <PieChart>
                 <Pie
                   data={charts.countryChart}
                   cx="50%"
-                  cy="45%"
-                  innerRadius={70}
-                  outerRadius={100}
+                  cy="50%"
+                  innerRadius={50}
+                  outerRadius={80}
                   paddingAngle={6}
                   dataKey="value"
                 >
@@ -136,7 +223,7 @@ const DashboardOverview = () => {
                     <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} stroke="rgba(255,255,255,0.8)" strokeWidth={3} />
                   ))}
                 </Pie>
-                <Tooltip contentStyle={{borderRadius: '12px', border: '1px solid #C7D9C7', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)', fontSize: '13px'}} />
+                <Tooltip contentStyle={{borderRadius: 'var(--r-md)', border: '1px solid var(--clr-border)', fontSize: '12px', fontFamily: 'var(--font-body)'}} />
               </PieChart>
             </ResponsiveContainer>
           </div>
@@ -145,41 +232,86 @@ const DashboardOverview = () => {
 
       {/* Top Performing Classes */}
       {topClasses && topClasses.length > 0 && (
-        <div className="bg-white rounded-xl shadow-sm border border-sage-100 overflow-hidden">
-          <div className="p-6 border-b border-sage-100 flex items-center justify-between">
+        <div style={{
+          background: '#fff',
+          border: '1px solid var(--clr-border)',
+          borderRadius: 'var(--r-xl)',
+          boxShadow: 'var(--shadow-sm)',
+          overflow: 'hidden',
+        }}>
+          <div style={{ padding: '24px 32px', borderBottom: '1px solid var(--clr-border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px' }}>
             <div>
-              <h3 className="text-xl font-serif font-bold text-sage-900">Top Performing Classes</h3>
-              <p className="text-sm text-sage-500 mt-1">Ranked by total bookings across all time</p>
+              <h3 style={{ fontFamily: 'var(--font-display)', fontSize: '1.375rem', fontWeight: 500, color: 'var(--clr-ink)' }}>
+                Top Performing Categories
+              </h3>
+              <p style={{ fontSize: '0.8125rem', color: 'var(--clr-warm-gray)', marginTop: '2px' }}>
+                Catalog ranking metrics based on total completed schedule slots.
+              </p>
             </div>
-            <span className="text-xs font-bold text-darkGreen bg-darkGreen/10 px-3 py-1.5 rounded-full border border-darkGreen/20 uppercase tracking-wider">
-              All Time Ranking
+            <span style={{
+              padding: '6px 14px',
+              background: 'var(--clr-forest-50)',
+              color: 'var(--clr-forest-700)',
+              border: '1px solid var(--clr-border)',
+              borderRadius: '99px',
+              fontSize: '0.625rem',
+              fontWeight: 700,
+              letterSpacing: '0.08em',
+              textTransform: 'uppercase',
+            }}>
+              Leaderboard Value
             </span>
           </div>
-          <div className="divide-y divide-sage-50">
+
+          <div style={{ display: 'flex', flexDirection: 'column' }}>
             {topClasses.map((cls) => {
               const medal = rankMedal(cls.rank);
               return (
-                <div key={cls.rank} className={`flex items-center gap-5 px-6 py-4 hover:bg-sage-50/50 transition-colors ${cls.rank === 1 ? 'bg-yellow-50/30' : ''}`}>
+                <div 
+                  key={cls.rank} 
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '20px',
+                    padding: '20px 32px',
+                    borderBottom: '1px solid var(--clr-border)',
+                    transition: 'background 150ms ease',
+                  }}
+                  onMouseEnter={e => e.currentTarget.style.background = 'var(--clr-forest-50)'}
+                  onMouseLeave={e => e.currentTarget.style.background = '#fff'}
+                >
                   {/* Rank Badge */}
-                  <div className={`w-10 h-10 rounded-xl flex items-center justify-center text-lg font-bold shrink-0 border ${medal.bg} ${medal.text} ${medal.border}`}>
+                  <div style={{
+                    width: 38, height: 38,
+                    borderRadius: '8px',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    fontSize: '0.9rem',
+                    fontWeight: 700,
+                    background: medal.bg,
+                    color: medal.text,
+                    border: medal.border,
+                    flexShrink: 0,
+                  }}>
                     {medal.emoji}
                   </div>
 
                   {/* Class Info */}
-                  <div className="flex-1 min-w-0">
-                    <p className="font-bold text-sage-900 truncate">{cls.title}</p>
-                    <p className="text-xs text-sage-500 mt-0.5 capitalize">{cls.type} Call · {cls.duration} min · ₹{cls.price?.toLocaleString()}</p>
+                  <div style={{ flexGrow: 1, minWidth: 0 }}>
+                    <p style={{ fontSize: '0.9375rem', fontWeight: 700, color: 'var(--clr-ink)', margin: 0 }}>{cls.title}</p>
+                    <p style={{ fontSize: '0.8125rem', color: 'var(--clr-warm-gray)', marginTop: '3px', textTransform: 'capitalize' }}>
+                      {cls.type} Call · {cls.duration} mins · ₹{cls.price?.toLocaleString()}
+                    </p>
                   </div>
 
                   {/* Stats */}
-                  <div className="flex items-center gap-8 shrink-0">
-                    <div className="text-right">
-                      <p className="text-[10px] font-bold text-sage-400 uppercase tracking-wider mb-0.5">Bookings</p>
-                      <p className={`text-xl font-bold font-serif ${cls.rank === 1 ? 'text-darkGreen' : 'text-sage-900'}`}>{cls.bookings}</p>
+                  <div style={{ display: 'flex', gap: '32px', flexShrink: 0 }}>
+                    <div style={{ textAlign: 'right' }}>
+                      <p style={{ fontSize: '0.5625rem', fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--clr-warm-gray)', marginBottom: '3px' }}>Bookings</p>
+                      <p style={{ fontFamily: 'var(--font-display)', fontSize: '1.25rem', fontWeight: 600, color: 'var(--clr-ink)', margin: 0 }}>{cls.bookings}</p>
                     </div>
-                    <div className="text-right">
-                      <p className="text-[10px] font-bold text-sage-400 uppercase tracking-wider mb-0.5">Revenue</p>
-                      <p className="text-xl font-bold font-serif text-sage-900">₹{cls.revenue.toLocaleString()}</p>
+                    <div style={{ textAlign: 'right' }}>
+                      <p style={{ fontSize: '0.5625rem', fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--clr-warm-gray)', marginBottom: '3px' }}>Revenue</p>
+                      <p style={{ fontFamily: 'var(--font-display)', fontSize: '1.25rem', fontWeight: 650, color: 'var(--clr-forest-750)', margin: 0 }}>₹{cls.revenue.toLocaleString()}</p>
                     </div>
                   </div>
                 </div>
@@ -190,8 +322,17 @@ const DashboardOverview = () => {
       )}
 
       {topClasses && topClasses.length === 0 && (
-        <div className="bg-white rounded-xl border border-sage-100 shadow-sm p-10 text-center">
-          <p className="text-sage-400 font-medium">No completed bookings yet to rank classes.</p>
+        <div style={{
+          background: '#fff',
+          border: '1px solid var(--clr-border)',
+          borderRadius: 'var(--r-xl)',
+          padding: '40px',
+          textAlign: 'center',
+          boxShadow: 'var(--shadow-sm)',
+        }}>
+          <p style={{ fontSize: '0.9375rem', color: 'var(--clr-warm-gray)', margin: 0 }}>
+            No bookings records found to map categories.
+          </p>
         </div>
       )}
     </div>

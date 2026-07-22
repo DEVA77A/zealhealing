@@ -3,13 +3,70 @@ import { useLocation, Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import axios from 'axios';
 import { usePricing } from '../context/PricingContext';
-import { FaClock, FaArrowRight, FaGlobeAmericas, FaMapMarkerAlt } from 'react-icons/fa';
+import { 
+  FiPhone, 
+  FiVideo, 
+  FiClock, 
+  FiMessageCircle, 
+  FiArrowRight, 
+  FiLayers,
+  FiCalendar
+} from 'react-icons/fi';
+
+const PackageRow = ({ pkg, symbol, displayPrice, index }) => (
+  <motion.div
+    initial={{ opacity: 0, y: 20 }}
+    animate={{ opacity: 1, y: 0 }}
+    exit={{ opacity: 0, scale: 0.98 }}
+    transition={{ delay: index * 0.05, duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
+    className="service-card"
+  >
+    {/* Thumbnail Image */}
+    <div className="service-image-container">
+      <img
+        src={pkg.image || '/tarot.png'}
+        alt={pkg.title}
+        className="service-image"
+      />
+    </div>
+
+    {/* Content Details */}
+    <div className="service-info">
+      <span className="duration-tag">
+        <FiClock style={{ strokeWidth: 2, marginRight: '4px' }} />
+        {pkg.duration} Min Session
+      </span>
+      
+      <h3 className="service-title">{pkg.title}</h3>
+      
+      <p className="service-desc">
+        {pkg.description || 'Divine guidance tailored to your specific energy and questions.'}
+      </p>
+
+      {/* Embedded Action and Price Row */}
+      <div className="service-bottom">
+        <div className="price-box">
+          <span className="price-label">HONORARIUM</span>
+          <div className="price-value">
+            {symbol}{displayPrice.toLocaleString()}
+          </div>
+        </div>
+
+        <Link to={`/book/${pkg._id}`}>
+          <button className="book-btn">
+            Book Now
+            <FiCalendar style={{ marginLeft: '6px', strokeWidth: 2 }} />
+          </button>
+        </Link>
+      </div>
+    </div>
+  </motion.div>
+);
 
 const PackagesListing = () => {
   const location = useLocation();
   const { symbol, getPrice, countryCategory, loading: pricingLoading } = usePricing();
-  const queryParams = new URLSearchParams(location.search);
-  const type = queryParams.get('type') || 'voice'; 
+  const type = new URLSearchParams(location.search).get('type') || 'voice';
 
   const [packages, setPackages] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -18,11 +75,9 @@ const PackagesListing = () => {
     const fetchClasses = async () => {
       try {
         const { data } = await axios.get('/api/classes');
-        const activePackages = data.filter(pkg => pkg.status === 'Active' && pkg.type === type);
-        setPackages(activePackages.sort((a, b) => a.price - b.price));
+        setPackages(data.filter(p => p.status === 'Active' && p.type === type).sort((a, b) => a.price - b.price));
         setLoading(false);
-      } catch (error) {
-        console.error('Error fetching classes:', error);
+      } catch {
         setLoading(false);
       }
     };
@@ -30,135 +85,352 @@ const PackagesListing = () => {
   }, [type]);
 
   const categoryName = type === 'voice' ? 'Voice Call Readings' : 'Video Call Readings';
-  const regionLabel = countryCategory === 'india' ? 'India Pricing (Inc. 18% GST)' : 'International Pricing';
+  const regionLabel = countryCategory === 'india' ? '🇮🇳 India Pricing · GST Applicable' : '🌍 International Pricing';
 
   if (loading || pricingLoading) {
     return (
-      <div className="min-h-screen pt-24 pb-12 flex flex-col justify-center items-center bg-sage-50">
-        <div className="w-12 h-12 border-4 border-darkGreen border-t-transparent rounded-full animate-spin mb-4"></div>
-        <p className="text-sage-600 font-serif italic">Preparing your session packages...</p>
+      <div style={{ minHeight: '100svh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '16px', background: 'var(--clr-parchment)' }}>
+        <div className="spinner" style={{ width: 36, height: 36 }} />
+        <p style={{ fontSize: '0.875rem', color: 'var(--clr-warm-gray)', letterSpacing: '0.04em' }}>Preparing your session packages…</p>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen pt-24 pb-20 bg-sage-50 px-4 md:px-8">
-      <div className="max-w-7xl mx-auto">
-        
-        {/* Header Section */}
-        <div className="text-center mb-16 relative">
-          <motion.div
-            initial={{ opacity: 0, y: -10 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-white border border-sage-200 text-darkGreen text-xs font-bold uppercase tracking-widest shadow-sm mb-6"
-          >
-            {countryCategory === 'india' ? <FaMapMarkerAlt className="animate-pulse" /> : <FaGlobeAmericas />}
-            {regionLabel}
+    <div style={{ background: 'var(--clr-parchment)', paddingTop: 'var(--nav-h)', overflowX: 'hidden' }}>
+      
+      {/* ── Custom Styles ── */}
+      <style dangerouslySetInnerHTML={{__html: `
+        .packages-container {
+          width: 100%;
+          max-width: 100%;
+          margin: 0 auto;
+          padding: clamp(48px, 6vw, 80px) clamp(16px, 3vw, 40px) clamp(80px, 10vw, 140px);
+        }
+        .selection-grid-container {
+          display: grid;
+          grid-template-columns: repeat(2, 1fr);
+          gap: 20px;
+          margin-top: 24px;
+        }
+        .service-card {
+          display: flex;
+          flex-direction: row;
+          align-items: flex-start;
+          background: #fff;
+          border: 1px solid var(--clr-border);
+          border-radius: var(--r-xl);
+          padding: 16px;
+          gap: 16px;
+          box-shadow: var(--shadow-sm);
+          transition: all 300ms cubic-bezier(0.16, 1, 0.3, 1);
+        }
+        .service-card:hover {
+          box-shadow: 0 12px 30px rgba(79, 70, 229, 0.06);
+          border-color: var(--clr-forest-200);
+          transform: translateY(-2px);
+        }
+        .service-image-container {
+          width: 80px;
+          height: 80px;
+          border-radius: var(--r-lg);
+          overflow: hidden;
+          flex-shrink: 0;
+          border: 1.5px solid var(--clr-border-strong);
+        }
+        .service-image {
+          width: 100%;
+          height: 100%;
+          object-fit: cover;
+          transition: transform 500ms ease;
+        }
+        .service-card:hover .service-image {
+          transform: scale(1.05);
+        }
+        .service-info {
+          flex-grow: 1;
+          display: flex;
+          flex-direction: column;
+          gap: 3px;
+          min-width: 0;
+        }
+        .duration-tag {
+          display: inline-flex;
+          align-items: center;
+          padding: 3px 10px;
+          border-radius: 99px;
+          background: var(--clr-forest-50);
+          color: var(--clr-forest-700);
+          font-size: 0.75rem;
+          font-weight: 700;
+          border: 1px solid var(--clr-border-strong);
+          align-self: flex-start;
+          margin-bottom: 2px;
+        }
+        .service-title {
+          font-family: var(--font-display);
+          font-size: 1.125rem;
+          font-weight: 800;
+          color: var(--clr-ink);
+          margin: 0;
+          line-height: 1.2;
+        }
+        .service-desc {
+          font-size: 0.8125rem;
+          color: var(--clr-ink-muted);
+          line-height: 1.45;
+          margin: 0 0 6px;
+        }
+        .service-bottom {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          border-top: 1px dashed var(--clr-border);
+          padding-top: 8px;
+          margin-top: auto;
+        }
+        .price-label {
+          font-size: 0.6rem;
+          font-weight: 700;
+          letter-spacing: 0.12em;
+          text-transform: uppercase;
+          color: var(--clr-warm-gray);
+          display: block;
+          margin-bottom: 1px;
+        }
+        .price-value {
+          font-family: var(--font-display);
+          font-size: 1.15rem;
+          font-weight: 800;
+          color: var(--clr-forest-700);
+          line-height: 1;
+        }
+        .book-btn {
+          height: 36px;
+          padding: 0 14px;
+          background: var(--clr-forest-50);
+          color: var(--clr-forest-700);
+          border: 1.5px solid var(--clr-border-strong);
+          border-radius: var(--r-md);
+          font-family: var(--font-body);
+          font-size: 0.8125rem;
+          font-weight: 700;
+          cursor: pointer;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          gap: 6px;
+          transition: all 200ms ease;
+          white-space: nowrap;
+        }
+        .book-btn:hover {
+          background: var(--clr-forest-700);
+          color: #fff;
+          border-color: transparent;
+        }
+        @media (max-width: 900px) {
+          .selection-grid-container {
+            grid-template-columns: 1fr;
+          }
+        }
+        @media (max-width: 576px) {
+          .service-card {
+            flex-direction: column;
+            align-items: stretch;
+            gap: 14px;
+          }
+          .service-image-container {
+            width: 100%;
+            height: 140px;
+          }
+          .service-bottom {
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 12px;
+          }
+          .book-btn { width: 100%; justify-content: center; }
+        }
+      `}} />
+
+      <div className="packages-container">
+
+        {/* Ambient Glow */}
+        <div style={{
+          position: 'absolute', top: '150px', left: '5%',
+          width: '350px', height: '350px', borderRadius: '50%',
+          background: 'radial-gradient(circle, rgba(99, 102, 241, 0.05) 0%, rgba(99, 102, 241, 0) 70%)',
+          filter: 'blur(50px)', pointerEvents: 'none', zIndex: 0,
+        }} />
+
+        {/* ── Page Header ── */}
+        <div style={{ textAlign: 'center', marginBottom: '48px', position: 'relative', zIndex: 1 }}>
+          <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
+            <span style={{
+              display: 'inline-flex', alignItems: 'center', gap: '6px',
+              padding: '5px 14px', borderRadius: '99px',
+              background: 'var(--clr-forest-50)', border: '1px solid var(--clr-border-strong)',
+              fontSize: '0.75rem', fontWeight: 700, letterSpacing: '0.05em',
+              textTransform: 'uppercase', color: 'var(--clr-forest-700)', marginBottom: '20px',
+            }}>
+              {regionLabel}
+            </span>
           </motion.div>
-          <h2 className="text-5xl md:text-6xl font-serif font-bold text-darkGreen mb-4 tracking-tight">{categoryName}</h2>
-          <p className="text-sage-600 text-lg md:text-xl font-light italic max-w-2xl mx-auto">
+
+          <motion.h1
+            initial={{ opacity: 0, y: 14 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6, delay: 0.08, ease: [0.16, 1, 0.3, 1] }}
+            style={{
+              fontFamily: 'var(--font-display)', fontSize: 'clamp(2rem, 5vw, 3.25rem)',
+              fontWeight: 800, lineHeight: 1.1, letterSpacing: '-0.025em',
+              color: 'var(--clr-ink)', marginBottom: '16px',
+            }}
+          >
+            {categoryName}
+          </motion.h1>
+
+          <motion.p
+            initial={{ opacity: 0 }} animate={{ opacity: 1 }}
+            transition={{ duration: 0.6, delay: 0.16 }}
+            style={{
+              fontSize: '1.0625rem', color: 'var(--clr-ink-muted)',
+              maxWidth: '480px', margin: '0 auto 36px', lineHeight: 1.7, fontWeight: 500,
+            }}
+          >
             "Everything in the universe is connected. Select a duration for your guided clarity."
-          </p>
-        </div>
+          </motion.p>
 
-        {/* Packages Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
-          <AnimatePresence mode="popLayout">
-            {packages.map((pkg, index) => {
-              const displayPrice = getPrice(pkg.type, pkg.duration, pkg.price);
-              
+          {/* ── Type switcher capsule ── */}
+          <motion.div
+            initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.22, duration: 0.5 }}
+            style={{
+              display: 'inline-flex',
+              background: 'var(--clr-forest-50)',
+              border: '1.5px solid var(--clr-border-strong)',
+              borderRadius: 'var(--r-full)', padding: '5px', gap: '4px',
+              boxShadow: 'var(--shadow-xs)'
+            }}
+          >
+            {[
+              { label: 'Voice Call', value: 'voice', to: '/classes?type=voice', icon: FiPhone },
+              { label: 'Video Call', value: 'video', to: '/classes?type=video', icon: FiVideo },
+            ].map(tab => {
+              const TabIcon = tab.icon;
+              const isActive = type === tab.value;
               return (
-                <motion.div 
-                  key={pkg._id}
-                  initial={{ opacity: 0, scale: 0.95 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  transition={{ delay: index * 0.05 }}
-                  className="group relative"
-                >
-                  <div className="h-full bg-white rounded-3xl p-6 shadow-sm border border-sage-100 hover:shadow-2xl hover:shadow-darkGreen/10 transition-all duration-500 overflow-hidden relative z-10">
-                    
-                    {/* Image Area */}
-                    <div className="relative aspect-[4/3] -mx-2 -mt-2 mb-6 rounded-2xl overflow-hidden bg-sage-50 group-hover:shadow-lg transition-transform duration-500">
-                      <img 
-                        src={pkg.image || "/tarot.png"} 
-                        alt={pkg.title} 
-                        className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
-                      />
-                      <div className="absolute inset-0 bg-gradient-to-t from-darkGreen/40 to-transparent flex items-bottom p-4">
-                         <div className="mt-auto">
-                           <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-white/90 backdrop-blur text-darkGreen text-[10px] font-bold rounded-full border border-white/50">
-                             <FaClock /> {pkg.duration} MINUTES
-                           </span>
-                         </div>
-                      </div>
-                    </div>
-                    
-                    {/* Content */}
-                    <div className="flex flex-col h-[calc(100%-200px)]">
-                      <h3 className="text-2xl font-serif font-bold text-sage-900 mb-3 group-hover:text-darkGreen transition-colors line-clamp-2 leading-tight">
-                        {pkg.title}
-                      </h3>
-                      <p className="text-sage-500 text-sm mb-6 leading-relaxed flex-grow italic line-clamp-3">
-                        {pkg.description || "Divine guidance tailored to your specific energy and questions."}
-                      </p>
-                      
-                      <div className="mt-auto">
-                        <div className="flex items-end justify-between mb-6">
-                           <div>
-                              <p className="text-[10px] font-bold text-sage-400 uppercase tracking-widest mb-1">Honorarium</p>
-                              <p className="text-3xl font-serif font-bold text-sage-900 leading-none">
-                                {symbol}{displayPrice.toLocaleString()}
-                              </p>
-                           </div>
-                           {countryCategory === 'india' && (
-                             <div className="text-right">
-                                <span className="text-[10px] font-bold text-darkGreen bg-darkGreen/5 px-2 py-1 rounded border border-darkGreen/10">GST INCL.</span>
-                             </div>
-                           )}
-                        </div>
-                        
-                        <Link to={`/book/${pkg._id}`} className="block">
-                          <button className="w-full py-4 bg-sage-50 text-darkGreen rounded-2xl font-bold hover:bg-darkGreen hover:text-white transition-all duration-300 flex items-center justify-center gap-2 group/btn">
-                            Commence Booking
-                            <FaArrowRight className="text-xs transform group-link/btn-hover:translate-x-1" />
-                          </button>
-                        </Link>
-                      </div>
-                    </div>
-
-                    {/* Background Pattern */}
-                    <div className="absolute -bottom-12 -right-12 w-32 h-32 bg-darkGreen/5 rounded-full blur-3xl group-hover:bg-darkGreen/10 transition-colors pointer-events-none" />
-                  </div>
-                </motion.div>
+                <Link key={tab.value} to={tab.to}>
+                  <button style={{
+                    height: 36, padding: '0 20px', borderRadius: 'var(--r-full)',
+                    border: 'none',
+                    background: isActive ? '#fff' : 'transparent',
+                    color: isActive ? 'var(--clr-forest-900)' : 'var(--clr-warm-gray)',
+                    fontFamily: 'var(--font-body)', fontSize: '0.875rem', fontWeight: 700,
+                    cursor: 'pointer', transition: 'all 250ms ease',
+                    display: 'flex', alignItems: 'center', gap: '7px',
+                    boxShadow: isActive ? 'var(--shadow-xs)' : 'none',
+                  }}>
+                    <TabIcon style={{ strokeWidth: 2 }} />
+                    {tab.label}
+                  </button>
+                </Link>
               );
             })}
-          </AnimatePresence>
-          
+          </motion.div>
+        </div>
+
+        {/* ── Package Grid ── */}
+        <div style={{ position: 'relative', zIndex: 1 }}>
+          <div className="selection-grid-container">
+            <AnimatePresence mode="popLayout">
+              {packages.map((pkg, index) => (
+                <PackageRow
+                  key={pkg._id}
+                  pkg={pkg}
+                  symbol={symbol}
+                  displayPrice={getPrice(pkg.type, pkg.duration, pkg.price)}
+                  index={index}
+                />
+              ))}
+            </AnimatePresence>
+          </div>
+
           {packages.length === 0 && (
-            <motion.div 
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              className="col-span-full py-20 text-center bg-white/50 rounded-3xl border-2 border-dashed border-sage-200"
+            <motion.div
+              initial={{ opacity: 0 }} animate={{ opacity: 1 }}
+              style={{ textAlign: 'center', padding: '80px 0' }}
             >
-              <div className="w-20 h-20 mx-auto bg-sage-100 rounded-full flex items-center justify-center text-sage-300 text-4xl mb-6">
-                <FaClock />
+              <div style={{
+                width: 72, height: 72, borderRadius: 'var(--r-xl)',
+                background: 'var(--clr-forest-50)', border: '1.5px solid var(--clr-border-strong)',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                color: 'var(--clr-forest-700)', fontSize: '1.75rem', margin: '0 auto 24px',
+              }}>
+                <FiLayers />
               </div>
-              <h3 className="text-2xl font-serif text-sage-900 mb-2">No Active Timeframes</h3>
-              <p className="text-sage-600">The divine timing for these packages is being recalibrated. Please check back shortly.</p>
+              <h3 style={{ fontFamily: 'var(--font-display)', fontSize: '1.75rem', fontWeight: 700, color: 'var(--clr-ink)', marginBottom: '12px' }}>No Active Packages</h3>
+              <p style={{ fontSize: '1rem', color: 'var(--clr-warm-gray)', maxWidth: '360px', margin: '0 auto', lineHeight: 1.7 }}>
+                Divine timing is being recalibrated. Please check back shortly.
+              </p>
             </motion.div>
           )}
         </div>
 
-        {/* Support Section */}
-        <div className="mt-20 text-center px-6 py-8 bg-darkGreen rounded-[3rem] text-white shadow-xl shadow-darkGreen/20">
-           <p className="text-darkGreen-50 text-sm uppercase tracking-widest font-bold mb-2">Seeking Specific Guidance?</p>
-           <h4 className="text-2xl font-serif mb-4">Custom Consultation durations available upon request.</h4>
-           <div className="flex justify-center gap-4">
-              <a href="https://wa.me/91XXXXXXXXXX" className="px-6 py-2 bg-white/10 hover:bg-white/20 rounded-full text-xs font-bold tracking-widest transition-all">WHATSAPP SUPPORT</a>
-              <Link to="/about" className="px-6 py-2 bg-white/10 hover:bg-white/20 rounded-full text-xs font-bold tracking-widest transition-all">ABOUT ZEAL HEALING</Link>
-           </div>
-        </div>
+        {/* ── Support Banner ── */}
+        {packages.length > 0 && (
+          <motion.div
+            initial={{ opacity: 0, y: 24 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.65, ease: [0.16, 1, 0.3, 1] }}
+            style={{
+              marginTop: '64px', padding: '56px 40px',
+              background: 'var(--clr-forest-900)',
+              borderRadius: 'var(--r-2xl)', textAlign: 'center',
+              position: 'relative', overflow: 'hidden',
+              boxShadow: 'var(--shadow-lg)',
+            }}
+          >
+            <div style={{ position: 'absolute', inset: 0, background: 'radial-gradient(circle at top right, rgba(99, 102, 241, 0.18), transparent)', pointerEvents: 'none' }} />
+            <div style={{ position: 'absolute', inset: 0, background: 'radial-gradient(circle at bottom left, rgba(79, 70, 229, 0.12), transparent)', pointerEvents: 'none' }} />
 
+            <div style={{ position: 'relative', zIndex: 1 }}>
+              <span style={{ fontSize: '0.75rem', fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase', color: 'var(--clr-forest-400)', marginBottom: '12px', display: 'inline-block' }}>
+                NEED A CUSTOM DURATION?
+              </span>
+              <h4 style={{ fontFamily: 'var(--font-display)', fontSize: 'clamp(1.5rem, 3vw, 2.25rem)', fontWeight: 800, color: '#fff', letterSpacing: '-0.02em', marginBottom: '28px', lineHeight: 1.2 }}>
+                Custom consultations & spiritual arrangements available
+              </h4>
+              <div style={{ display: 'flex', justifyContent: 'center', gap: '14px', flexWrap: 'wrap' }}>
+                <a
+                  href="https://wa.me/919324175883"
+                  style={{
+                    display: 'inline-flex', alignItems: 'center', gap: '8px',
+                    height: 48, padding: '0 24px', borderRadius: 'var(--r-md)',
+                    background: '#fff', color: 'var(--clr-forest-900)',
+                    fontFamily: 'var(--font-body)', fontSize: '0.9375rem', fontWeight: 700,
+                    transition: 'all 200ms ease',
+                  }}
+                >
+                  <FiMessageCircle /> WhatsApp Support
+                </a>
+                <Link
+                  to="/about"
+                  style={{
+                    display: 'inline-flex', alignItems: 'center', gap: '8px',
+                    height: 48, padding: '0 24px',
+                    background: 'rgba(255,255,255,0.08)', border: '1.5px solid rgba(255,255,255,0.16)',
+                    borderRadius: 'var(--r-md)', color: '#fff',
+                    fontFamily: 'var(--font-body)', fontSize: '0.9375rem', fontWeight: 600,
+                    transition: 'all 200ms ease',
+                  }}
+                >
+                  Explore Philosophy <FiArrowRight />
+                </Link>
+              </div>
+            </div>
+          </motion.div>
+        )}
       </div>
     </div>
   );
