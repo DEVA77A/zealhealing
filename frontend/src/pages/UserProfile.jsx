@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Link } from 'react-router-dom';
 import axios from 'axios';
+import { FiMessageSquare } from 'react-icons/fi';
 import { useAuth } from '../context/AuthContext';
 import { toast } from 'react-toastify';
 
@@ -241,6 +242,54 @@ const UserProfile = () => {
                         <p>Duration: <span style={{ color: 'var(--clr-ink)', fontWeight: 500 }}>{booking.duration} minutes</span></p>
                         <p>Scheduled: <span style={{ color: 'var(--clr-ink)', fontWeight: 500 }}>{new Date(booking.appointmentDate).toLocaleDateString()}</span></p>
                       </div>
+
+                      {/* Guidance written by the practitioner for this booking */}
+                      {booking.adminSuggestion?.trim() && (
+                        <div style={{
+                          marginTop: '16px',
+                          padding: '14px 16px',
+                          background: 'var(--clr-forest-50)',
+                          border: '1px solid var(--clr-border)',
+                          borderLeft: '3px solid var(--clr-forest-600)',
+                          borderRadius: 'var(--r-md)',
+                        }}>
+                          <div style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'space-between',
+                            gap: '10px',
+                            flexWrap: 'wrap',
+                            marginBottom: '6px',
+                          }}>
+                            <span style={{
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              gap: '6px',
+                              fontSize: '0.625rem',
+                              fontWeight: 700,
+                              letterSpacing: '0.1em',
+                              textTransform: 'uppercase',
+                              color: 'var(--clr-forest-700)',
+                            }}>
+                              <FiMessageSquare size={12} /> Guidance from Baghya Ashok
+                            </span>
+                            {booking.adminSuggestionAt && (
+                              <span style={{ fontSize: '0.625rem', color: 'var(--clr-warm-gray)' }}>
+                                {new Date(booking.adminSuggestionAt).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}
+                              </span>
+                            )}
+                          </div>
+                          <p style={{
+                            fontSize: '0.8125rem',
+                            lineHeight: 1.65,
+                            color: 'var(--clr-ink-muted)',
+                            whiteSpace: 'pre-wrap',
+                            margin: 0,
+                          }}>
+                            {booking.adminSuggestion}
+                          </p>
+                        </div>
+                      )}
 
                       {canDownload && (
                         <button

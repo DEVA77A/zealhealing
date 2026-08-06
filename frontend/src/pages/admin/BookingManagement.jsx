@@ -11,7 +11,16 @@ const BookingManagement = () => {
   const [statusFilter, setStatusFilter] = useState('All');
   const [viewingInvoice, setViewingInvoice] = useState(null);
   const [adminModal, setAdminModal] = useState(null);
+  // Draft of the guidance note shown to the client, edited in the modal.
+  const [suggestionDraft, setSuggestionDraft] = useState('');
+  const [savingSuggestion, setSavingSuggestion] = useState(false);
   const { getToken } = useAuth();
+
+  /** Open the session modal for a booking, seeding the suggestion draft. */
+  const openAdminModal = (booking) => {
+    setSuggestionDraft(booking.adminSuggestion || '');
+    setAdminModal(booking);
+  };
 
   useEffect(() => {
     const fetchBookings = async () => {
@@ -48,17 +57,43 @@ const BookingManagement = () => {
     }
   };
 
-  const updateAdminDetails = async (id, details) => {
+  /**
+   * Persist admin-only fields on a booking.
+   * @param {object} options
+   * @param {boolean} [options.keepOpen] leave the modal open after saving
+   * @param {string}  [options.message]  toast text
+   */
+  const updateAdminDetails = async (id, details, { keepOpen = false, message = 'Session details updated' } = {}) => {
     try {
       const { data } = await axios.put(`/api/admin/bookings/${id}`, 
         details,
         { headers: { Authorization: `Bearer ${getToken()}` } }
       );
       setBookings(bookings.map(b => b._id === id ? data : b));
-      toast.success('Session details updated');
-      setAdminModal(null);
+      toast.success(message);
+      if (keepOpen) {
+        // Keep the modal mounted but refresh it with the saved document.
+        setAdminModal(data);
+      } else {
+        setAdminModal(null);
+      }
+      return data;
     } catch (error) {
       toast.error('Update failed');
+      return null;
+    }
+  };
+
+  const saveSuggestion = async (id) => {
+    setSavingSuggestion(true);
+    try {
+      await updateAdminDetails(
+        id,
+        { adminSuggestion: suggestionDraft },
+        { keepOpen: true, message: suggestionDraft.trim() ? 'Suggestion sent to client' : 'Suggestion cleared' }
+      );
+    } finally {
+      setSavingSuggestion(false);
     }
   };
 
@@ -246,7 +281,7 @@ const BookingManagement = () => {
                   </td>
                   <td style={{ padding: '20px 24px' }}>
                     <button 
-                      onClick={() => setAdminModal(booking)} 
+                      onClick={() => openAdminModal(booking)} 
                       style={{
                         background: 'none',
                         border: 'none',
@@ -461,6 +496,62 @@ const BookingManagement = () => {
                        defaultValue={adminModal.medicine}
                        onBlur={(e) => updateAdminDetails(adminModal._id, { medicine: e.target.value })}
                      />
+                   </div>
+
+                   {/* Guidance for the client. Unlike the fields above, this is
+                       shown to the user on their appointment. */}
+                   <div style={{
+                     display: 'flex',
+                     flexDirection: 'column',
+                     gap: '6px',
+                     paddingTop: '16px',
+                     borderTop: '1px solid var(--clr-border)',
+                   }}>
+                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px', flexWrap: 'wrap' }}>
+                       <label htmlFor="admin-suggestion" style={{ fontSize: '0.625rem', fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--clr-forest-700)' }}>
+                         Suggestion for Client
+                       </label>
+                       <span style={{ fontSize: '0.625rem', color: 'var(--clr-warm-gray)' }}>
+                         Visible to the client
+                       </span>
+                     </div>
+
+                     <textarea
+                       id="admin-suggestion"
+                       className="input-field"
+                       style={{ minHeight: '110px', resize: 'vertical', padding: '12px' }}
+                       placeholder="Type your guidance for this client. They will see it on their appointment…"
+                       value={suggestionDraft}
+                       onChange={(e) => setSuggestionDraft(e.target.value)}
+                     />
+
+                     <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
+                       <button
+                         type="button"
+                         onClick={() => saveSuggestion(adminModal._id)}
+                         disabled={savingSuggestion || suggestionDraft === (adminModal.adminSuggestion || '')}
+                         className="btn-primary"
+                         style={{
+                           padding: '10px 18px',
+                           fontSize: '0.8125rem',
+                           borderRadius: 'var(--r-md)',
+                           opacity: savingSuggestion || suggestionDraft === (adminModal.adminSuggestion || '') ? 0.55 : 1,
+                           cursor: savingSuggestion || suggestionDraft === (adminModal.adminSuggestion || '') ? 'not-allowed' : 'pointer',
+                         }}
+                       >
+                         {savingSuggestion ? 'Sending…' : 'Send Suggestion'}
+                       </button>
+
+                       {adminModal.adminSuggestion ? (
+                         <span style={{ fontSize: '0.6875rem', color: 'var(--clr-forest-700)', fontWeight: 600 }}>
+                           Sent{adminModal.adminSuggestionAt ? ` on ${new Date(adminModal.adminSuggestionAt).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}` : ''}
+                         </span>
+                       ) : (
+                         <span style={{ fontSize: '0.6875rem', color: 'var(--clr-warm-gray)' }}>
+                           No suggestion sent yet
+                         </span>
+                       )}
+                     </div>
                    </div>
                  </div>
                </div>

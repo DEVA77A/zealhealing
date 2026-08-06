@@ -387,7 +387,7 @@ const Home = () => {
                 className="btn-secondary"
                 style={{ height: 54, padding: '0 32px', fontSize: '1rem' }}
               >
-                Explore Classes <FiArrowRight style={{ marginLeft: '8px' }} />
+                Explore <FiArrowRight style={{ marginLeft: '8px' }} />
               </motion.button>
             </Link>
           </motion.div>

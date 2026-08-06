@@ -141,6 +141,10 @@ const bookingSchema = mongoose.Schema(
     isManuallyConfirmed: { type: Boolean, default: false },
     crystals: { type: String, default: "" },
     medicine: { type: String, default: "" },
+    // Guidance the admin writes for this client. Unlike crystals/medicine
+    // (internal tracking), this is surfaced to the user on their appointment.
+    adminSuggestion: { type: String, default: "" },
+    adminSuggestionAt: { type: Date },
     // Notification tracking
     emailSentToClient: { type: Boolean, default: false },
     emailSentToAdmin: { type: Boolean, default: false },

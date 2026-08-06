@@ -206,7 +206,7 @@ const SalesAnalytics = () => {
         >
           <div>
             <h3 style={{ fontFamily: 'var(--font-display)', fontSize: '1.5rem', fontWeight: 500, color: 'var(--clr-ink)', margin: 0 }}>Modality Popularity</h3>
-            <p style={{ fontSize: '0.8125rem', color: 'var(--clr-warm-gray)', marginTop: '4px' }}>Distribution of sessions across registered classes.</p>
+            <p style={{ fontSize: '0.8125rem', color: 'var(--clr-warm-gray)', marginTop: '4px' }}>Distribution of sessions across registered appointments.</p>
           </div>
           <div style={{ height: '320px', width: '100%' }}>
             <ResponsiveContainer width="100%" height="100%">

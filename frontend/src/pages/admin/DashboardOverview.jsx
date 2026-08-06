@@ -132,7 +132,7 @@ const DashboardOverview = () => {
           { label: "Today's Revenue", val: overview.todaysRevenue, prefix: '₹', highlight: true },
           { label: 'Pending Bookings', val: overview.pendingBookings, prefix: '', highlight: false },
           { label: 'Completed Sessions', val: overview.completedSessions, prefix: '', highlight: false },
-          { label: 'Classes Sold', val: overview.totalClassesSold, prefix: '', highlight: false },
+          { label: 'Appointments Sold', val: overview.totalClassesSold, prefix: '', highlight: false },
         ].map((s, i) => (
           <div key={i} style={{
             background: '#fff',
@@ -230,7 +230,7 @@ const DashboardOverview = () => {
         </div>
       </div>
 
-      {/* Top Performing Classes */}
+      {/* Top Performing Appointments */}
       {topClasses && topClasses.length > 0 && (
         <div style={{
           background: '#fff',
@@ -295,7 +295,7 @@ const DashboardOverview = () => {
                     {medal.emoji}
                   </div>
 
-                  {/* Class Info */}
+                  {/* Appointment Info */}
                   <div style={{ flexGrow: 1, minWidth: 0 }}>
                     <p style={{ fontSize: '0.9375rem', fontWeight: 700, color: 'var(--clr-ink)', margin: 0 }}>{cls.title}</p>
                     <p style={{ fontSize: '0.8125rem', color: 'var(--clr-warm-gray)', marginTop: '3px', textTransform: 'capitalize' }}>

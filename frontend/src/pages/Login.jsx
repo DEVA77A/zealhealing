@@ -2,10 +2,8 @@ import { useState } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import { motion } from 'framer-motion';
-import axios from 'axios';
 import { useAuth } from '../context/AuthContext';
-import { usePricing } from '../context/PricingContext';
-import { getCurrencyByCountryCode } from '../utils/currencyMap';
+import { useLocationPrompt } from '../context/LocationPromptContext';
 
 const FormField = ({ label, type, placeholder, value, onChange, required, children }) => (
   <div className="field-group">
@@ -33,21 +31,13 @@ const Login = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { login } = useAuth();
-  const { changeCountry } = usePricing();
+  const { promptForLocation } = useLocationPrompt();
 
   const from = location.state?.from || '/';
-
-  const getLocation = () =>
-    new Promise((resolve, reject) => {
-      if (!navigator.geolocation) reject(new Error('Not supported'));
-      else navigator.geolocation.getCurrentPosition(resolve, reject, { timeout: 15000, enableHighAccuracy: true, maximumAge: 0 });
-    });
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
-
-    let locationPromise = navigator.geolocation ? getLocation() : null;
 
     try {
       const userData = await login(email, password);
@@ -65,28 +55,14 @@ const Login = () => {
 
       const userRedirect = from.startsWith('/admin') ? '/' : from;
 
-      if (locationPromise) {
-        try {
-          const position = await locationPromise;
-          const { latitude, longitude } = position.coords;
-          const res = await axios.get(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}`);
-          if (res.data?.address?.country_code) {
-            const countryCode = res.data.address.country_code.toUpperCase();
-            const countryName = res.data.address.country;
-            const { currency, symbol } = getCurrencyByCountryCode(countryCode);
-            changeCountry(countryName, currency, symbol);
-          }
-        } catch {
-          try {
-            const ipRes = await axios.get('https://ipapi.co/json/');
-            if (ipRes.data?.country_code) {
-              const { currency, symbol } = getCurrencyByCountryCode(ipRes.data.country_code.toUpperCase());
-              changeCountry(ipRes.data.country_name, currency, symbol);
-            }
-          } catch (_) { /* use defaults */ }
-        }
-      }
       toast.success('Welcome back!');
+
+      // Authentication has succeeded - only now do we ask for location, so the
+      // native permission prompt never appears before the user is signed in.
+      // Prices update in place through PricingContext, so navigating away while
+      // this resolves is safe.
+      await promptForLocation();
+
       navigate(userRedirect, { replace: true });
     } catch (error) {
       toast.error(error.response?.data?.message || 'Login failed. Please check your credentials.');

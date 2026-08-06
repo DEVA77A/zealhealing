@@ -21,7 +21,7 @@ const getClassById = async (req, res) => {
     if (singleClass) {
       res.json(singleClass);
     } else {
-      res.status(404).json({ message: 'Class not found' });
+      res.status(404).json({ message: 'Appointment not found' });
     }
   } catch (error) {
     res.status(500).json({ message: error.message });
@@ -75,7 +75,7 @@ const updateClass = async (req, res) => {
       const updatedClass = await existingClass.save();
       res.json(updatedClass);
     } else {
-      res.status(404).json({ message: 'Class not found' });
+      res.status(404).json({ message: 'Appointment not found' });
     }
   } catch (error) {
     res.status(500).json({ message: error.message });
@@ -91,9 +91,9 @@ const deleteClass = async (req, res) => {
 
     if (existingClass) {
       await Class.deleteOne({ _id: existingClass._id });
-      res.json({ message: 'Class removed' });
+      res.json({ message: 'Appointment removed' });
     } else {
-      res.status(404).json({ message: 'Class not found' });
+      res.status(404).json({ message: 'Appointment not found' });
     }
   } catch (error) {
     res.status(500).json({ message: error.message });

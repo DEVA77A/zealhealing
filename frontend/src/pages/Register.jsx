@@ -3,16 +3,37 @@ import { Link, useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import { motion } from 'framer-motion';
 import { useAuth } from '../context/AuthContext';
+import { useLocationPrompt } from '../context/LocationPromptContext';
+import { usePricing } from '../context/PricingContext';
+import CountryPickerField from '../components/CountryPickerField';
 
 const Register = () => {
   const [formData, setFormData] = useState({ name: '', email: '', phone: '', password: '', confirmPassword: '' });
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
   const [loading, setLoading] = useState(false);
+  // Tracks whether the visitor picked a country by hand. An explicit choice
+  // must win over device geolocation, which a VPN cannot influence.
+  const [countryChosen, setCountryChosen] = useState(false);
   const navigate = useNavigate();
   const { register } = useAuth();
+  const { promptForLocation } = useLocationPrompt();
+  const { country, currency, symbol, changeCountry, formatPrice, prices, loading: pricingLoading } = usePricing();
 
   const handleChange = (e) => setFormData(p => ({ ...p, [e.target.name]: e.target.value }));
+
+  /** Apply the chosen country immediately so the preview updates as you pick. */
+  const handleCountryChange = (c) => {
+    setCountryChosen(true);
+    changeCountry(c.country, c.currency, c.symbol, c.code);
+  };
+
+  // Live preview of the cheapest session in the selected currency.
+  const previewPrice = (() => {
+    if (pricingLoading || !prices?.voice) return null;
+    const tiers = Object.values(prices.voice).map(Number).filter(Number.isFinite);
+    return tiers.length ? formatPrice(Math.min(...tiers)) : null;
+  })();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -22,6 +43,11 @@ const Register = () => {
     try {
       await register(formData.name, formData.email, formData.phone, formData.password);
       toast.success('Welcome to Zeal Healing!');
+
+      // Only auto-detect when the visitor did not choose a country themselves.
+      // Registration signs the user in, so this still runs after auth succeeds.
+      if (!countryChosen) await promptForLocation();
+
       navigate('/');
     } catch (error) {
       toast.error(error.response?.data?.message || 'Registration failed');
@@ -132,6 +158,18 @@ const Register = () => {
                 </button>
               </div>
             </div>
+
+            {/* Country -> drives the currency prices are shown in */}
+            <CountryPickerField
+              label="Country"
+              value={country}
+              onChange={handleCountryChange}
+              hint={
+                previewPrice
+                  ? `Prices will be shown in ${currency} (${symbol}) — sessions from ${previewPrice}.`
+                  : 'Choose your country to see prices in your local currency.'
+              }
+            />
 
             {/* Confirm Password */}
             <div className="field-group">

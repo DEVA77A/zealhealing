@@ -9,7 +9,7 @@ import { FiClock, FiCalendar, FiCheck, FiArrowRight, FiPhone, FiVideo, FiShield,
 const AppointmentDetails = () => {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { symbol, getPrice } = usePricing();
+  const { getPrice, formatPrice } = usePricing();
 
   const [selectedPkg, setSelectedPkg] = useState(null);
   const [relatedPkgs, setRelatedPkgs] = useState([]);
@@ -84,6 +84,7 @@ const AppointmentDetails = () => {
   const formatTime12h = (t) => { const [h, m] = t.split(':').map(Number); const ap = h >= 12 ? 'PM' : 'AM'; const h12 = h === 0 ? 12 : h > 12 ? h - 12 : h; return `${String(h12).padStart(2,'0')}:${String(m).padStart(2,'0')} ${ap}`; };
 
   const sessionPrice = getPrice(selectedPkg.type, selectedPkg.duration, selectedPkg.price);
+  const sessionPriceLabel = formatPrice(sessionPrice);
   const isReady = selectedDate && selectedTime;
   const TypeIcon = selectedPkg.type === 'voice' ? FiPhone : FiVideo;
 
@@ -370,7 +371,7 @@ const AppointmentDetails = () => {
                   Session Honorarium
                 </span>
                 <span style={{ fontFamily: 'var(--font-display)', fontSize: '1.75rem', fontWeight: 800, color: 'var(--clr-forest-700)', lineHeight: 1 }}>
-                  {symbol}{sessionPrice}
+                  {sessionPriceLabel}
                 </span>
               </div>
             </div>
@@ -522,7 +523,7 @@ const AppointmentDetails = () => {
               <div>
                 <p style={{ fontSize: '0.5625rem', fontWeight: 700, letterSpacing: '0.15em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.4)', marginBottom: '2px' }}>Fee</p>
                 <p style={{ fontFamily: 'var(--font-display)', fontSize: '1.625rem', fontWeight: 800, color: '#fff', lineHeight: 1, letterSpacing: '-0.02em' }}>
-                  {symbol}{sessionPrice}
+                  {sessionPriceLabel}
                 </p>
               </div>
               {selectedDate && (

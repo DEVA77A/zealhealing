@@ -1,6 +1,5 @@
 import { createContext, useContext, useState, useEffect } from 'react';
 import axios from 'axios';
-import { usePricing } from './PricingContext';
 
 const AuthContext = createContext();
 
@@ -9,7 +8,6 @@ export const useAuth = () => useContext(AuthContext);
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
-  const { changeCountry } = usePricing();
 
   useEffect(() => {
     const userInfo = localStorage.getItem('userInfo');
@@ -19,14 +17,17 @@ export const AuthProvider = ({ children }) => {
     setLoading(false);
   }, []);
 
+  /**
+   * Authenticate and persist the session.
+   *
+   * Note: this deliberately does NOT set the pricing country. Location is
+   * resolved after login by useLocationPrompt(), which prefers precise browser
+   * geolocation and only falls back to the coarse IP result. Applying the IP
+   * location here as well caused two competing updates and a visible price
+   * flip. The IP-derived `data.location` is still returned for callers.
+   */
   const login = async (email, password) => {
     const { data } = await axios.post('/api/auth/login', { email, password });
-    
-    // Auto-detect and set pricing context based on login location
-    if (data.location) {
-      changeCountry(data.location.country, data.location.currency, data.location.currencySymbol);
-    }
-    
     setUser(data);
     localStorage.setItem('userInfo', JSON.stringify(data));
     return data;

@@ -29,8 +29,11 @@ const basePrices = {
   },
 };
 
-// GST applies only for India (18%)
-const GST_RATE_INDIA = 18;
+// GST is charged at 18% on every booking, domestic and international alike.
+const GST_RATE = 18;
+
+// Legacy alias kept so existing imports keep resolving.
+const GST_RATE_INDIA = GST_RATE;
 
 // Working hours configuration
 const workingHours = {
@@ -44,4 +47,4 @@ const workingHours = {
   6: { start: '09:00', end: '22:00' }, // Saturday
 };
 
-module.exports = { basePrices, GST_RATE_INDIA, workingHours };
+module.exports = { basePrices, GST_RATE, GST_RATE_INDIA, workingHours };

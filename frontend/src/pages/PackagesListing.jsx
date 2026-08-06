@@ -10,10 +10,11 @@ import {
   FiMessageCircle, 
   FiArrowRight, 
   FiLayers,
-  FiCalendar
+  FiCalendar,
+  FiAlertCircle
 } from 'react-icons/fi';
 
-const PackageRow = ({ pkg, symbol, displayPrice, index }) => (
+const PackageRow = ({ pkg, priceLabel, index }) => (
   <motion.div
     initial={{ opacity: 0, y: 20 }}
     animate={{ opacity: 1, y: 0 }}
@@ -48,7 +49,7 @@ const PackageRow = ({ pkg, symbol, displayPrice, index }) => (
         <div className="price-box">
           <span className="price-label">HONORARIUM</span>
           <div className="price-value">
-            {symbol}{displayPrice.toLocaleString()}
+            {priceLabel}
           </div>
         </div>
 
@@ -65,27 +66,47 @@ const PackageRow = ({ pkg, symbol, displayPrice, index }) => (
 
 const PackagesListing = () => {
   const location = useLocation();
-  const { symbol, getPrice, countryCategory, loading: pricingLoading } = usePricing();
+  const { getPrice, formatPrice, countryCategory, loading: pricingLoading } = usePricing();
   const type = new URLSearchParams(location.search).get('type') || 'voice';
 
   const [packages, setPackages] = useState([]);
   const [loading, setLoading] = useState(true);
+  // Distinguishes "the server didn't answer" from "there genuinely are none",
+  // so a backend outage isn't reported to users as an empty catalogue.
+  const [loadError, setLoadError] = useState(false);
+  const [reloadKey, setReloadKey] = useState(0);
 
   useEffect(() => {
+    let cancelled = false;
+
     const fetchClasses = async () => {
+      setLoading(true);
+      setLoadError(false);
       try {
         const { data } = await axios.get('/api/classes');
-        setPackages(data.filter(p => p.status === 'Active' && p.type === type).sort((a, b) => a.price - b.price));
-        setLoading(false);
-      } catch {
-        setLoading(false);
+        if (cancelled) return;
+        setPackages(
+          data
+            .filter(p => p.status === 'Active' && p.type === type)
+            .sort((a, b) => a.price - b.price)
+        );
+      } catch (error) {
+        if (cancelled) return;
+        console.error('Failed to load appointments:', error.message);
+        setPackages([]);
+        setLoadError(true);
+      } finally {
+        if (!cancelled) setLoading(false);
       }
     };
+
     fetchClasses();
-  }, [type]);
+    return () => { cancelled = true; };
+  }, [type, reloadKey]);
 
   const categoryName = type === 'voice' ? 'Voice Call Readings' : 'Video Call Readings';
-  const regionLabel = countryCategory === 'india' ? '🇮🇳 India Pricing · GST Applicable' : '🌍 International Pricing';
+  // No GST mention while browsing - tax is disclosed in the payment flow.
+  const regionLabel = countryCategory === 'india' ? '🇮🇳 India Pricing' : '🌍 International Pricing';
 
   if (loading || pricingLoading) {
     return (
@@ -347,8 +368,7 @@ const PackagesListing = () => {
                 <PackageRow
                   key={pkg._id}
                   pkg={pkg}
-                  symbol={symbol}
-                  displayPrice={getPrice(pkg.type, pkg.duration, pkg.price)}
+                  priceLabel={formatPrice(getPrice(pkg.type, pkg.duration, pkg.price))}
                   index={index}
                 />
               ))}
@@ -366,12 +386,26 @@ const PackagesListing = () => {
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
                 color: 'var(--clr-forest-700)', fontSize: '1.75rem', margin: '0 auto 24px',
               }}>
-                <FiLayers />
+                {loadError ? <FiAlertCircle /> : <FiLayers />}
               </div>
-              <h3 style={{ fontFamily: 'var(--font-display)', fontSize: '1.75rem', fontWeight: 700, color: 'var(--clr-ink)', marginBottom: '12px' }}>No Active Packages</h3>
+              <h3 style={{ fontFamily: 'var(--font-display)', fontSize: '1.75rem', fontWeight: 700, color: 'var(--clr-ink)', marginBottom: '12px' }}>
+                {loadError ? "Couldn't load appointments" : 'No Active Appointments'}
+              </h3>
               <p style={{ fontSize: '1rem', color: 'var(--clr-warm-gray)', maxWidth: '360px', margin: '0 auto', lineHeight: 1.7 }}>
-                Divine timing is being recalibrated. Please check back shortly.
+                {loadError
+                  ? 'We could not reach the server. Check your connection and try again.'
+                  : 'Divine timing is being recalibrated. Please check back shortly.'}
               </p>
+              {loadError && (
+                <button
+                  type="button"
+                  onClick={() => setReloadKey(k => k + 1)}
+                  className="btn-primary"
+                  style={{ marginTop: '24px', padding: '12px 28px', borderRadius: 'var(--r-md)' }}
+                >
+                  Try Again
+                </button>
+              )}
             </motion.div>
           )}
         </div>

@@ -47,7 +47,7 @@ const AdminLayout = () => {
   const navItems = [
     { name: 'Dashboard', path: '/admin', icon: FiGrid },
     { name: 'Calendar', path: '/admin/calendar', icon: FiCalendar },
-    { name: 'Classes', path: '/admin/classes', icon: FiBookOpen },
+    { name: 'Appointments', path: '/admin/classes', icon: FiBookOpen },
     { name: 'Bookings', path: '/admin/bookings', icon: FiBookmark },
     { name: 'Users', path: '/admin/users', icon: FiUsers },
     { name: 'Invoices', path: '/admin/invoices', icon: FiFileText },

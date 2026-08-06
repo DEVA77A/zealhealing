@@ -1,25 +1,17 @@
 import { motion } from 'framer-motion';
 import { Link } from 'react-router-dom';
-import { usePricing } from '../context/PricingContext';
 import { 
   FiPhone, 
   FiVideo, 
   FiCheck, 
   FiArrowRight, 
-  FiMessageCircle,
-  FiCompass
+  FiMessageCircle
 } from 'react-icons/fi';
 
+// This page presents the two consultation formats only. Prices (and GST) are
+// shown on the session listing and through the payment flow, so no pricing
+// context is needed here.
 const CategorySelection = () => {
-  const { symbol, prices, countryCategory, loading } = usePricing();
-
-  const getStartingPrice = (type) => {
-    if (loading || !prices || !prices[type]) return '…';
-    return prices[type][15] || prices[type]['15'];
-  };
-
-  const showGst = countryCategory === 'india';
-
   return (
     <div style={{ minHeight: '100svh', background: 'var(--clr-parchment)', paddingTop: 'var(--nav-h)', overflowX: 'hidden', position: 'relative' }}>
       
@@ -131,31 +123,24 @@ const CategorySelection = () => {
           flex-shrink: 0;
           font-size: 1.1rem;
         }
-        .price-wrapper {
+        /* Sits where the price block used to. Keeps margin-top:auto so the
+           action button stays pinned to the bottom of equal-height cards. */
+        .practitioner-note {
           margin-top: auto;
           margin-bottom: 28px;
+          width: 100%;
+          padding: 14px 16px;
+          background: var(--clr-forest-50);
+          border: 1px solid var(--clr-border);
+          border-radius: var(--r-md);
+          font-size: 0.8125rem;
+          line-height: 1.6;
+          color: var(--clr-ink-muted);
+          text-align: left;
         }
-        .price-tag-label {
-          font-size: 0.6875rem;
-          font-weight: 700;
-          letter-spacing: 0.12em;
-          text-transform: uppercase;
-          color: var(--clr-warm-gray);
-          margin-bottom: 4px;
-          display: block;
-        }
-        .price-tag-val {
-          font-family: var(--font-display);
-          font-size: 2.25rem;
-          font-weight: 800;
+        .practitioner-note strong {
           color: var(--clr-forest-700);
-          line-height: 1.1;
-        }
-        .price-tag-gst {
-          font-size: 0.6875rem;
-          color: var(--clr-warm-gray);
-          margin-top: 4px;
-          letter-spacing: 0.05em;
+          font-weight: 700;
         }
         .select-action-btn {
           width: 100%;
@@ -267,13 +252,10 @@ const CategorySelection = () => {
                 </li>
               </ul>
               
-              <div className="price-wrapper">
-                <span className="price-tag-label">Starting From</span>
-                <div className="price-tag-val">
-                  {symbol}{getStartingPrice('voice')}
-                </div>
-                {showGst && <p className="price-tag-gst">+ 18% GST Applies</p>}
-              </div>
+              <p className="practitioner-note">
+                You are getting guidance from <strong>Baghya Ashok</strong>, a distinguished
+                Reiki Grand Master and a premier Tarot and Angel Card reader.
+              </p>
 
               <div className="select-action-btn">
                 Commence Voice Reading <FiArrowRight style={{ strokeWidth: 2 }} />
@@ -305,7 +287,7 @@ const CategorySelection = () => {
                   <FiCheck className="check-icon" /> Immersive Face-to-Face Guidance
                 </li>
                 <li className="feature-item">
-                  <FiCheck className="check-icon" /> Real-Time Tarot Card Spreads
+                  <FiCheck className="check-icon" /> Call via Zoom Meeting
                 </li>
                 <li className="feature-item">
                   <FiCheck className="check-icon" /> Deeper Energetic Resonance
@@ -315,13 +297,10 @@ const CategorySelection = () => {
                 </li>
               </ul>
               
-              <div className="price-wrapper">
-                <span className="price-tag-label">Starting From</span>
-                <div className="price-tag-val">
-                  {symbol}{getStartingPrice('video')}
-                </div>
-                {showGst && <p className="price-tag-gst">+ 18% GST Applies</p>}
-              </div>
+              <p className="practitioner-note">
+                You are getting guidance from <strong>Baghya Ashok</strong>, a distinguished
+                Reiki Grand Master and a premier Tarot and Angel Card reader.
+              </p>
 
               <div className="select-action-btn">
                 Commence Video Reading <FiArrowRight style={{ strokeWidth: 2 }} />

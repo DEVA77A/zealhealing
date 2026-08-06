@@ -4,7 +4,7 @@ const { isSlotAvailable } = require('../services/slotService');
 const { sendClientBookingEmail, sendAdminBookingEmail } = require('../services/emailService');
 const { sendClientWhatsApp, sendAdminWhatsApp } = require('../services/whatsappService');
 const { createZoomMeeting } = require('../services/zoomService');
-const { GST_RATE_INDIA } = require('../config/pricingConfig');
+const { GST_RATE } = require('../config/pricingConfig');
 
 // @desc    Create new booking
 // @route   POST /api/bookings/create
@@ -58,11 +58,12 @@ const createBooking = async (req, res) => {
       return res.status(409).json({ message: 'This time slot is no longer available. Please select a different slot.' });
     }
 
-    // Calculate GST & total
+    // GST applies to every booking, domestic and international alike.
+    // All figures here are INR - the stored source of truth.
     const baseAmount = baseINRAmount || price;
     const isIndia = countryCategory === 'india';
-    const gstRate = isIndia ? GST_RATE_INDIA : 0;
-    const gstAmount = isIndia ? Math.round(baseAmount * gstRate / 100) : 0;
+    const gstRate = GST_RATE;
+    const gstAmount = Math.round(baseAmount * gstRate / 100);
     const totalAmount = baseAmount + gstAmount;
 
     // Determine call platform
@@ -192,7 +193,14 @@ const getBookings = async (req, res) => {
 // @access  Private/Admin
 const updateBookingStatus = async (req, res) => {
   try {
-    const { paymentStatus, bookingStatus, isManuallyConfirmed, crystals, medicine } = req.body;
+    const {
+      paymentStatus,
+      bookingStatus,
+      isManuallyConfirmed,
+      crystals,
+      medicine,
+      adminSuggestion,
+    } = req.body;
     const booking = await Booking.findById(req.params.id);
 
     if (!booking) {
@@ -205,6 +213,16 @@ const updateBookingStatus = async (req, res) => {
     if (crystals !== undefined) booking.crystals = crystals;
     if (medicine !== undefined) booking.medicine = medicine;
 
+    // Guidance shown to the client. Only re-stamp the timestamp when the text
+    // actually changes, so unrelated updates don't look like new advice.
+    if (adminSuggestion !== undefined) {
+      const next = String(adminSuggestion);
+      if (next !== booking.adminSuggestion) {
+        booking.adminSuggestion = next;
+        booking.adminSuggestionAt = next.trim() ? new Date() : undefined;
+      }
+    }
+
     // When admin accepts the booking, mark payment as completed and generate the invoice
     if (bookingStatus === 'Accepted') {
       booking.paymentStatus = 'Completed';
@@ -213,9 +231,9 @@ const updateBookingStatus = async (req, res) => {
       const existingInvoice = await Invoice.findOne({ bookingId: booking._id });
       if (!existingInvoice) {
         const invoiceNumber = `ZH-FY25-26/R14_${Math.floor(Math.random() * 10000)}`;
+        // Invoice is always raised in INR (the stored base), GST inclusive.
         const subtotal = booking.baseINRAmount || booking.price;
-        const isIndia = booking.countryCategory === 'india';
-        const gstRate = isIndia ? GST_RATE_INDIA : 0;
+        const gstRate = booking.gstRate > 0 ? booking.gstRate : GST_RATE;
         const SGST = subtotal * (gstRate / 200); // Half of GST
         const CGST = subtotal * (gstRate / 200); // Half of GST
         const grandTotal = subtotal + SGST + CGST;
@@ -241,7 +259,10 @@ const updateBookingStatus = async (req, res) => {
       booking.paymentStatus = 'Failed';
     }
 
-    const updatedBooking = await booking.save();
+    // Validate only what this request changed. Legacy bookings predate some
+    // required fields, and full-document validation would reject an otherwise
+    // valid admin edit (e.g. adding a suggestion) on those older records.
+    const updatedBooking = await booking.save({ validateModifiedOnly: true });
     res.json(updatedBooking);
   } catch (error) {
     res.status(500).json({ message: error.message });

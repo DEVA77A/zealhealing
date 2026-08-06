@@ -1,51 +1,35 @@
-export const countryCurrencyMap = {
-  US: { currency: 'USD', symbol: '$' },
-  GB: { currency: 'GBP', symbol: '£' },
-  IN: { currency: 'INR', symbol: '₹' },
-  AE: { currency: 'AED', symbol: 'د.إ' },
-  JP: { currency: 'JPY', symbol: '¥' },
-  AU: { currency: 'AUD', symbol: 'A$' },
-  CA: { currency: 'CAD', symbol: 'C$' },
-  SG: { currency: 'SGD', symbol: 'S$' },
-  NZ: { currency: 'NZD', symbol: 'NZ$' },
-  CH: { currency: 'CHF', symbol: 'CHF' },
-  CN: { currency: 'CNY', symbol: '¥' },
-  ZA: { currency: 'ZAR', symbol: 'R' },
-  // Eurozone countries
-  AT: { currency: 'EUR', symbol: '€' },
-  BE: { currency: 'EUR', symbol: '€' },
-  CY: { currency: 'EUR', symbol: '€' },
-  EE: { currency: 'EUR', symbol: '€' },
-  FI: { currency: 'EUR', symbol: '€' },
-  FR: { currency: 'EUR', symbol: '€' },
-  DE: { currency: 'EUR', symbol: '€' },
-  GR: { currency: 'EUR', symbol: '€' },
-  IE: { currency: 'EUR', symbol: '€' },
-  IT: { currency: 'EUR', symbol: '€' },
-  LV: { currency: 'EUR', symbol: '€' },
-  LT: { currency: 'EUR', symbol: '€' },
-  LU: { currency: 'EUR', symbol: '€' },
-  MT: { currency: 'EUR', symbol: '€' },
-  NL: { currency: 'EUR', symbol: '€' },
-  PT: { currency: 'EUR', symbol: '€' },
-  SK: { currency: 'EUR', symbol: '€' },
-  SI: { currency: 'EUR', symbol: '€' },
-  ES: { currency: 'EUR', symbol: '€' },
-};
+/**
+ * DEPRECATED shim - kept so existing imports keep working.
+ *
+ * This module used to hold a hand-maintained 32-country table that defaulted
+ * every unknown country to USD. It now delegates to utils/countryCurrency.js,
+ * which is backed by all 250 ISO-3166 countries in src/data/countries.json.
+ *
+ * Prefer importing from './countryCurrency' in new code.
+ */
+import countries from '../data/countries.json';
+import {
+  getCurrencyByCountryCode as resolveCurrency,
+  getCurrencySymbol,
+} from './countryCurrency';
 
 /**
- * Returns the currency and symbol for a given 2-letter ISO country code.
- * Falls back to local formatting if not hardcoded.
+ * Legacy export: code -> { currency, symbol } for every country, not just 32.
  */
-export const getCurrencyByCountryCode = (countryCode) => {
-  if (!countryCode) return { currency: 'INR', symbol: '₹' };
-  
-  const upperCode = countryCode.toUpperCase();
-  if (countryCurrencyMap[upperCode]) {
-    return countryCurrencyMap[upperCode];
-  }
+export const countryCurrencyMap = countries.reduce((acc, entry) => {
+  if (!entry || !entry.code) return acc;
+  const currency = String(entry.currency || 'INR').toUpperCase();
+  acc[String(entry.code).toUpperCase()] = {
+    currency,
+    symbol: getCurrencySymbol(currency, entry.symbol),
+  };
+  return acc;
+}, {});
 
-  // Fallback: This is not perfect for every country, but works for many ISO codes.
-  // In a full production app, you might use a complete library like 'country-to-currency'
-  return { currency: 'USD', symbol: '$' }; // Defaulting to USD for unknown countries
-};
+/**
+ * Returns the currency and symbol for a 2-letter ISO country code.
+ * Unknown codes now fall back to INR (the base currency) rather than USD.
+ */
+export const getCurrencyByCountryCode = resolveCurrency;
+
+export default { countryCurrencyMap, getCurrencyByCountryCode };

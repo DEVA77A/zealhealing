@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import axios from 'axios';
 import { toast } from 'react-toastify';
+import { formatMoney, roundToCurrency, getCurrencyDecimals } from '../utils/countryCurrency';
 
 const Payment = () => {
   const navigate = useNavigate();
@@ -28,13 +29,20 @@ const Payment = () => {
 
   if (!bookingData) return null;
 
-  const isIndia = bookingData.customerDetails.countryCategory === 'india';
-  const packagePrice = bookingData.package.dynamicPrice || bookingData.package.price;
-  const gstRate = isIndia ? 0.18 : 0;
-  const gstAmount = packagePrice * gstRate;
-  const totalAmount = (packagePrice + gstAmount).toFixed(2);
   const symbol = bookingData.pricingContext?.symbol || '₹';
   const currency = bookingData.pricingContext?.currency || 'INR';
+
+  const packagePrice = bookingData.package.dynamicPrice || bookingData.package.price;
+  // GST applies to every booking, international included. The rate is carried
+  // over from the checkout snapshot so the figure the user approved cannot drift.
+  const gstRatePercent = bookingData.pricingContext?.gstRate ?? 18;
+
+  // Round to the currency's own precision (no decimals for JPY/KRW, two for
+  // USD/EUR, whole rupees for INR) so the parts always add up to the total.
+  const money = (n) => roundToCurrency(n, currency);
+  const gstAmount = money(packagePrice * (gstRatePercent / 100));
+  const totalAmount = money(packagePrice + gstAmount);
+  const fmt = (n) => formatMoney(n, { currency, symbol });
 
   const handleCopy = (text, field) => {
     navigator.clipboard.writeText(text);
@@ -114,9 +122,14 @@ const Payment = () => {
         const token = userInfo ? userInfo.token : '';
         const config = { headers: { Authorization: `Bearer ${token}` } };
 
-        const amountInPaise = Math.round(parseFloat(totalAmount) * 100);
+        // Razorpay expects the amount in the currency's smallest unit. That is
+        // 1/100 for most currencies, but zero-decimal currencies (JPY, KRW,
+        // VND...) have no subunit, so multiplying by 100 there would charge
+        // 100x the intended amount.
+        const minorUnitFactor = 10 ** getCurrencyDecimals(currency);
+        const amountInMinorUnits = Math.round(Number(totalAmount) * minorUnitFactor);
 
-        const { data: order } = await axios.post('/api/payment/create-order', { amount: amountInPaise, currency: currency }, config);
+        const { data: order } = await axios.post('/api/payment/create-order', { amount: amountInMinorUnits, currency: currency }, config);
 
         const options = {
           key: import.meta.env.VITE_RAZORPAY_KEY_ID,
@@ -220,12 +233,43 @@ const Payment = () => {
                 </div>
                 <div style={{ textAlign: 'right' }}>
                   <p style={{ fontFamily: 'var(--font-display)', fontSize: '2.5rem', fontWeight: 600, color: 'var(--clr-forest-700)', lineHeight: 1 }}>
-                    {symbol}{Number(totalAmount).toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                    {fmt(totalAmount)}
                   </p>
                   <p style={{ fontSize: '0.625rem', fontWeight: 700, letterSpacing: '0.15em', textTransform: 'uppercase', color: 'var(--clr-warm-gray)', marginTop: '6px' }}>
                     Total Payable
                   </p>
                 </div>
+              </div>
+
+              {/* Tax breakdown — disclosed here in the payment step */}
+              <div style={{
+                borderTop: '1px solid var(--clr-border)',
+                borderBottom: '1px solid var(--clr-border)',
+                padding: '18px 0',
+                marginBottom: '32px',
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '10px',
+              }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.875rem', color: 'var(--clr-ink-muted)' }}>
+                  <span>Session fee</span>
+                  <span style={{ fontWeight: 600 }}>{fmt(packagePrice)}</span>
+                </div>
+                {gstRatePercent > 0 && (
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.875rem', color: 'var(--clr-ink-muted)' }}>
+                    <span>GST ({gstRatePercent}%)</span>
+                    <span style={{ fontWeight: 600 }}>{fmt(gstAmount)}</span>
+                  </div>
+                )}
+                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.875rem', paddingTop: '10px', borderTop: '1px solid var(--clr-border)' }}>
+                  <span style={{ fontWeight: 700, color: 'var(--clr-ink)' }}>Total Payable</span>
+                  <span style={{ fontWeight: 700, color: 'var(--clr-forest-700)' }}>{fmt(totalAmount)}</span>
+                </div>
+                {currency !== 'INR' && (
+                  <p style={{ fontSize: '0.6875rem', color: 'var(--clr-warm-gray)', lineHeight: 1.5 }}>
+                    Converted from a base of ₹{Number(bookingData.package.baseINRAmount || bookingData.package.price).toLocaleString()} at the current rate. Your tax invoice is issued in INR.
+                  </p>
+                )}
               </div>
 
               {/* Badges bar */}

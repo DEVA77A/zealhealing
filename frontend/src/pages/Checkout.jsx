@@ -2,7 +2,9 @@ import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import axios from 'axios';
+import { FiMapPin } from 'react-icons/fi';
 import { usePricing } from '../context/PricingContext';
+import { roundToCurrency } from '../utils/countryCurrency';
 
 const FormField = ({ label, name, type, placeholder, value, onChange, required, error }) => (
   <div className="field-group" style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
@@ -44,7 +46,12 @@ const FormField = ({ label, name, type, placeholder, value, onChange, required, 
 const Checkout = () => {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { country, countryCategory, currency, symbol, getPrice, exchangeRate, gstRate, changeCountry } = usePricing();
+  const { country, countryCode, currency, symbol, getPrice, formatPrice, exchangeRate, gstRate, isDomestic } = usePricing();
+
+  // Region follows the detected location: India is domestic, anywhere else is
+  // abroad. Derived from isDomestic (country code / currency) so it stays
+  // correct even if the server omits countryCategory.
+  const countryCategory = isDomestic ? 'india' : 'abroad';
   const [selectedPkg, setSelectedPkg] = useState(null);
   const [loading, setLoading] = useState(true);
   const [appointmentInfo, setAppointmentInfo] = useState(null);
@@ -94,22 +101,15 @@ const Checkout = () => {
 
   const handleChange = (e) => setFormData({ ...formData, [e.target.name]: e.target.value });
 
-  const handleCategoryToggle = (category) => {
-    if (category === 'india') {
-      changeCountry('India', 'INR', '₹');
-    } else {
-      changeCountry('United States', 'USD', '$');
-    }
-    setFormData(prev => ({ ...prev, countryCategory: category }));
-  };
-
   const handleSubmit = (e) => {
     e.preventDefault();
     const dynamicPrice = getPrice(selectedPkg.type, selectedPkg.duration, selectedPkg.price);
     const bookingData = {
       package: { ...selectedPkg, dynamicPrice, baseINRAmount: selectedPkg.price },
-      pricingContext: { country, countryCategory: formData.countryCategory, currency, symbol, exchangeRate, gstRate },
-      customerDetails: formData,
+      // Use the location-derived values directly rather than the mirrored form
+      // state, so the submitted region can never lag behind detection.
+      pricingContext: { country, countryCode, countryCategory, currency, symbol, exchangeRate, gstRate },
+      customerDetails: { ...formData, country: country || formData.country, countryCategory },
       appointment: appointmentInfo,
     };
     localStorage.setItem('pendingBooking', JSON.stringify(bookingData));
@@ -136,8 +136,13 @@ const Checkout = () => {
   };
 
   const basePrice = getPrice(selectedPkg.type, selectedPkg.duration, selectedPkg.price);
-  const isIndia = formData.countryCategory === 'india';
-  const totalPrice = isIndia ? (basePrice * 1.18).toFixed(2) : basePrice;
+  // GST applies to every booking, international included. The rate comes from
+  // the pricing context rather than a hardcoded multiplier, so a rate change
+  // flows through automatically. Amounts are rounded to the currency's own
+  // precision so the lines shown always sum to the total.
+  const effectiveGstRate = gstRate || 0;
+  const gstAmount = roundToCurrency(basePrice * (effectiveGstRate / 100), currency);
+  const totalPrice = roundToCurrency(basePrice + gstAmount, currency);
 
   return (
     <div style={{ minHeight: '100svh', background: 'var(--clr-parchment)', paddingTop: 'var(--nav-h)' }}>
@@ -178,39 +183,30 @@ const Checkout = () => {
                   Client Profile
                 </h2>
 
-                <div style={{
-                  display: 'flex',
-                  background: 'var(--clr-forest-50)',
-                  borderRadius: 'var(--r-lg)',
-                  padding: '4px',
-                  gap: '4px',
-                  border: '1px solid var(--clr-border)',
-                }}>
-                  {[
-                    { label: '🇮🇳 India', value: 'india' },
-                    { label: '🌍 Abroad', value: 'abroad' },
-                  ].map(({ label, value }) => (
-                    <button
-                      key={value}
-                      type="button"
-                      onClick={() => handleCategoryToggle(value)}
-                      style={{
-                        padding: '8px 16px',
-                        borderRadius: 'var(--r-md)',
-                        border: 'none',
-                        fontFamily: 'var(--font-body)',
-                        fontSize: '0.75rem',
-                        fontWeight: 700,
-                        cursor: 'pointer',
-                        transition: 'all 200ms ease',
-                        background: formData.countryCategory === value ? '#fff' : 'transparent',
-                        color: formData.countryCategory === value ? 'var(--clr-forest-700)' : 'var(--clr-warm-gray)',
-                        boxShadow: formData.countryCategory === value ? 'var(--shadow-xs)' : 'none',
-                      }}
-                    >
-                      {label}
-                    </button>
-                  ))}
+                {/* Region is derived from the detected location, not chosen by
+                    hand: India is domestic, every other country is abroad. */}
+                <div
+                  style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '8px',
+                    alignSelf: 'flex-start',
+                    padding: '8px 14px',
+                    background: 'var(--clr-forest-50)',
+                    border: '1px solid var(--clr-border)',
+                    borderRadius: 'var(--r-full)',
+                    fontSize: '0.75rem',
+                    fontWeight: 700,
+                    color: 'var(--clr-forest-700)',
+                    whiteSpace: 'nowrap',
+                  }}
+                  title={`Detected from your location — billed as ${isDomestic ? 'domestic' : 'international'}`}
+                >
+                  <FiMapPin size={13} style={{ flexShrink: 0 }} />
+                  {country || 'Detecting…'}
+                  <span style={{ color: 'var(--clr-warm-gray)', fontWeight: 600 }}>
+                    {isDomestic ? 'India' : 'Abroad'}
+                  </span>
                 </div>
               </div>
 
@@ -374,7 +370,8 @@ const Checkout = () => {
                     },
                     {
                       label: 'Pricing Region',
-                      main: formData.countryCategory === 'india' ? '🇮🇳 India Zone' : '🌍 International Zone',
+                      main: isDomestic ? '🇮🇳 India Zone' : '🌍 International Zone',
+                      sub: country || undefined,
                     },
                   ].map((item, i) => (
                     <div key={i} style={{ display: 'flex', gap: '14px', alignItems: 'flex-start' }}>
@@ -410,18 +407,18 @@ const Checkout = () => {
                 <div style={{ borderTop: '1px solid var(--clr-border)', paddingTop: '24px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.875rem', color: 'var(--clr-ink-muted)' }}>
                     <span>Honorarium</span>
-                    <span style={{ fontWeight: 600 }}>{symbol}{basePrice.toLocaleString()}</span>
+                    <span style={{ fontWeight: 600 }}>{formatPrice(basePrice)}</span>
                   </div>
-                  {isIndia && (
+                  {effectiveGstRate > 0 && (
                     <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.875rem', color: 'var(--clr-ink-muted)' }}>
-                      <span>GST (18%)</span>
-                      <span style={{ fontWeight: 600 }}>{symbol}{(basePrice * 0.18).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                      <span>GST ({effectiveGstRate}%)</span>
+                      <span style={{ fontWeight: 600 }}>{formatPrice(gstAmount)}</span>
                     </div>
                   )}
                   <div style={{ borderTop: '1.5px solid var(--clr-border)', paddingTop: '16px', marginTop: '4px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                     <span style={{ fontSize: '0.875rem', fontWeight: 700, color: 'var(--clr-ink)' }}>Total Payable</span>
                     <span style={{ fontFamily: 'var(--font-display)', fontSize: '1.875rem', fontWeight: 600, color: 'var(--clr-forest-700)' }}>
-                      {symbol}{Number(totalPrice).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                      {formatPrice(totalPrice)}
                     </span>
                   </div>
                   <p style={{ fontSize: '0.6875rem', color: 'var(--clr-warm-gray)', textAlign: 'center', lineHeight: 1.5, marginTop: '8px' }}>

@@ -85,7 +85,7 @@ const Navbar = () => {
 
   const navLinks = [
     { to: '/', label: 'Home' },
-    { to: '/classes', label: 'Classes' },
+    { to: '/classes', label: 'Appointments' },
     { to: '/sessions', label: 'Sessions' },
     ...(user ? [{ to: '/my-bookings', label: 'My Bookings' }] : []),
     { to: '/about', label: 'About' },

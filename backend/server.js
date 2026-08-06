@@ -11,6 +11,11 @@ connectDB();
 
 const app = express();
 
+// Behind a proxy/load balancer (Render, Nginx, Cloudflare) the real client IP
+// arrives in X-Forwarded-For. Without this, location detection would see the
+// proxy's address instead of the visitor's.
+app.set('trust proxy', true);
+
 // Middleware
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ limit: '10mb', extended: true }));

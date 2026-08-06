@@ -17,7 +17,7 @@ const ClassManagement = () => {
       setClasses(data);
       setLoading(false);
     } catch (error) {
-      toast.error('Failed to fetch classes');
+      toast.error('Failed to fetch appointments');
       setLoading(false);
     }
   };
@@ -27,15 +27,15 @@ const ClassManagement = () => {
   }, []);
 
   const deleteClass = async (id) => {
-    if (window.confirm('Are you sure you want to delete this class?')) {
+    if (window.confirm('Are you sure you want to delete this appointment?')) {
       try {
         await axios.delete(`/api/classes/${id}`, {
           headers: { Authorization: `Bearer ${getToken()}` }
         });
-        toast.success('Class deleted');
+        toast.success('Appointment deleted');
         fetchClasses();
       } catch (error) {
-        toast.error('Failed to delete class');
+        toast.error('Failed to delete appointment');
       }
     }
   };
@@ -47,7 +47,7 @@ const ClassManagement = () => {
         { status: newStatus },
         { headers: { Authorization: `Bearer ${getToken()}` } }
       );
-      toast.success(`Class ${newStatus.toLowerCase()}`);
+      toast.success(`Appointment ${newStatus.toLowerCase()}`);
       fetchClasses();
     } catch (error) {
       toast.error('Failed to update status');
@@ -63,10 +63,10 @@ const ClassManagement = () => {
       await axios.post(`/api/classes`, newClass, {
         headers: { Authorization: `Bearer ${getToken()}` }
       });
-      toast.success('Class duplicated');
+      toast.success('Appointment duplicated');
       fetchClasses();
     } catch (error) {
-      toast.error('Failed to duplicate class');
+      toast.error('Failed to duplicate appointment');
     }
   };
 
@@ -109,12 +109,12 @@ const ClassManagement = () => {
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '20px' }}>
         <div>
           <h2 style={{ fontFamily: 'var(--font-display)', fontSize: '2.5rem', fontWeight: 500, color: 'var(--clr-ink)', letterSpacing: '-0.02em', marginBottom: '4px' }}>
-            Class Catalog
+            Appointment Catalog
           </h2>
           <p style={{ fontSize: '0.9375rem', color: 'var(--clr-warm-gray)' }}>Manage session types, configure pricing parameters, and configure active categories.</p>
         </div>
         <Link to="/admin/classes/add" className="btn-primary" style={{ display: 'inline-flex', borderRadius: 'var(--r-md)', textDecoration: 'none' }}>
-          ＋ Add Class
+          ＋ Add Appointment
         </Link>
       </div>
 
@@ -123,7 +123,7 @@ const ClassManagement = () => {
         <div style={{ flexGrow: 1, minWidth: '240px', position: 'relative' }}>
           <input 
             type="text" 
-            placeholder="Search class titles or category fields..." 
+            placeholder="Search appointment titles or category fields..." 
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             style={{
@@ -173,7 +173,7 @@ const ClassManagement = () => {
           <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', minWidth: '900px' }}>
             <thead>
               <tr style={{ background: 'var(--clr-forest-50)', borderBottom: '1px solid var(--clr-border)' }}>
-                <th style={{ padding: '16px 24px', fontSize: '0.6875rem', fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--clr-warm-gray)' }}>Class name / Description</th>
+                <th style={{ padding: '16px 24px', fontSize: '0.6875rem', fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--clr-warm-gray)' }}>Appointment name / Description</th>
                 <th style={{ padding: '16px 24px', fontSize: '0.6875rem', fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--clr-warm-gray)' }}>Category</th>
                 <th style={{ padding: '16px 24px', fontSize: '0.6875rem', fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--clr-warm-gray)' }}>Type</th>
                 <th style={{ padding: '16px 24px', fontSize: '0.6875rem', fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--clr-warm-gray)' }}>Duration</th>
@@ -261,7 +261,7 @@ const ClassManagement = () => {
               {filteredClasses.length === 0 && (
                 <tr>
                   <td colSpan="7" style={{ padding: '40px', textAlign: 'center', color: 'var(--clr-warm-gray)' }}>
-                    No sessions/classes matching system parameters.
+                    No appointments matching system parameters.
                   </td>
                 </tr>
               )}

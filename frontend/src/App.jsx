@@ -2,6 +2,7 @@ import { BrowserRouter as Router, Routes, Route, useLocation } from 'react-route
 import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import { PricingProvider } from './context/PricingContext';
+import { LocationPromptProvider } from './context/LocationPromptContext';
 import { AuthProvider } from './context/AuthContext';
 import ProtectedRoute from './components/ProtectedRoute';
 
@@ -86,11 +87,16 @@ const AppContent = () => {
 function App() {
   return (
     <PricingProvider>
-      <AuthProvider>
-        <Router>
-          <AppContent />
-        </Router>
-      </AuthProvider>
+      {/* Owns the post-login location prompt. Sits inside PricingProvider
+          (it consumes usePricing) and outside Router so the fallback dialog
+          survives the post-login redirect. */}
+      <LocationPromptProvider>
+        <AuthProvider>
+          <Router>
+            <AppContent />
+          </Router>
+        </AuthProvider>
+      </LocationPromptProvider>
     </PricingProvider>
   );
 }

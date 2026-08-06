@@ -41,7 +41,7 @@ const AddEditClass = () => {
           }
           setLoading(false);
         } catch (error) {
-          toast.error('Failed to fetch class');
+          toast.error('Failed to fetch appointment');
           navigate('/admin/classes');
         }
       };
@@ -77,10 +77,10 @@ const AddEditClass = () => {
 
       if (isEdit) {
         await axios.put(`/api/classes/${id}`, formData, config);
-        toast.success('Class updated successfully');
+        toast.success('Appointment updated successfully');
       } else {
         await axios.post('/api/classes', formData, config);
-        toast.success('Class added successfully');
+        toast.success('Appointment added successfully');
       }
       navigate('/admin/classes');
     } catch (error) {
@@ -180,7 +180,7 @@ const AddEditClass = () => {
                   {formData.image ? (
                     <img 
                       src={formData.image} 
-                      alt="Class Cover" 
+                      alt="Appointment Cover" 
                       style={{ width: '100%', height: '100%', objectFit: 'cover' }}
                       onError={(e) => {
                         e.target.style.display = 'none';

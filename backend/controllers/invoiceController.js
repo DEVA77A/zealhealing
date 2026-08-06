@@ -1,6 +1,7 @@
 const PDFDocument = require('pdfkit');
 const Booking = require('../models/Booking');
 const Invoice = require('../models/Invoice');
+const { GST_RATE } = require('../config/pricingConfig');
 const fs = require('fs');
 const path = require('path');
 
@@ -36,15 +37,32 @@ const generateInvoice = async (req, res) => {
       return res.status(403).json({ message: 'Invoice not available. Your booking is still in queue and awaiting admin approval.' });
     }
 
-    // Use totalAmount from booking (which includes GST) or fall back to price
-    const grandTotal = booking.totalAmount || booking.convertedAmount || booking.price;
-    const totalTax = booking.gstAmount || (grandTotal - (booking.price || grandTotal));
-    const subtotal = grandTotal - totalTax;
-    
+    // A tax invoice is always raised in INR - the stored base currency - so the
+    // figures below are derived only from INR fields. Never fall back to
+    // convertedAmount here: that is a foreign display value and mixing it in
+    // would silently treat, say, $41.77 as Rs41.77.
+    const subtotal = booking.baseINRAmount || booking.price || 0;
+
+    // Treat a missing or zero rate as the standard rate. Bookings created
+    // before GST was applied internationally stored 0, and their invoices
+    // should still show the tax correctly.
+    const GST = booking.gstRate > 0 ? booking.gstRate : GST_RATE;
+
+    const totalTax = Math.round(subtotal * (GST / 100) * 100) / 100;
+    const grandTotal = subtotal + totalTax;
+
     const SGST = totalTax / 2;
     const CGST = totalTax / 2;
-    const GST = booking.gstRate || (totalTax > 0 ? 18 : 0);
-    const roundOff = 0; 
+    const roundOff = 0;
+
+    // What the customer actually paid, when it was not INR. Shown for
+    // reconciliation only - it carries no tax meaning.
+    const paidCurrency = booking.currency && booking.currency !== 'INR' ? booking.currency : null;
+    const paidSymbol = booking.currencySymbol || paidCurrency || '';
+    const paidAmount =
+      paidCurrency && booking.exchangeRate
+        ? Math.round(grandTotal * booking.exchangeRate * 100) / 100
+        : null;
 
     // DEBUG LOG
     console.log(`[Invoice] Generating PDF for Booking ${booking._id}`);
@@ -163,7 +181,7 @@ const generateInvoice = async (req, res) => {
     doc.text('1', 280, rowTop, { width: 30, align: 'center' });
     doc.text('Nos', 310, rowTop, { width: 40, align: 'center' });
     doc.text(subtotal.toFixed(2), 350, rowTop, { width: 70, align: 'right' });
-    doc.text('18.0%', 420, rowTop, { width: 40, align: 'right' });
+    doc.text(`${GST.toFixed(1)}%`, 420, rowTop, { width: 40, align: 'right' });
     doc.text(grandTotal.toFixed(2), 480, rowTop, { width: 70, align: 'right' });
 
     // --- Bottom Section ---
@@ -183,11 +201,13 @@ const generateInvoice = async (req, res) => {
     doc.font('Helvetica').text(subtotal.toFixed(2), sumX, currentY, { width: sumW, align: 'right' });
     currentY += 14;
 
-    doc.font('Helvetica-Bold').text('SGST@9.0%', sumX, currentY);
+    const halfRate = (GST / 2).toFixed(1);
+
+    doc.font('Helvetica-Bold').text(`SGST@${halfRate}%`, sumX, currentY);
     doc.font('Helvetica').text(SGST.toFixed(2), sumX, currentY, { width: sumW, align: 'right' });
     currentY += 14;
 
-    doc.font('Helvetica-Bold').text('CGST@9.0%', sumX, currentY);
+    doc.font('Helvetica-Bold').text(`CGST@${halfRate}%`, sumX, currentY);
     doc.font('Helvetica').text(CGST.toFixed(2), sumX, currentY, { width: sumW, align: 'right' });
     currentY += 14;
 
@@ -208,6 +228,21 @@ const generateInvoice = async (req, res) => {
 
     doc.text('Balance', sumX, currentY);
     doc.text('0.00', sumX, currentY, { width: sumW, align: 'right' });
+    currentY += 18;
+
+    // Reconciliation note for international bookings. The invoice itself stays
+    // in INR for tax purposes; this simply restates the charged amount.
+    if (paidAmount !== null) {
+      doc.font('Helvetica-Oblique').fontSize(8).fillColor(lightText);
+      doc.text(
+        `Charged in ${paidCurrency}: ${paidSymbol}${paidAmount.toFixed(2)} ` +
+          `(1 INR = ${booking.exchangeRate} ${paidCurrency})`,
+        sumX,
+        currentY,
+        { width: sumW, align: 'right' }
+      );
+      doc.font('Helvetica').fontSize(9).fillColor(darkText);
+    }
 
     // --- Footer / Signature ---
     const footerY = doc.page.height - 150;
