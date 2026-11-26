@@ -50,7 +50,7 @@ const BookingCalendar = () => {
     if (!date) return [];
     const dateStr = new Date(date.getTime() - date.getTimezoneOffset() * 60000).toISOString().split('T')[0];
     return bookings.filter(b => {
-      if (!b.appointmentDate) return false;
+      if (!b.appointmentDate || !b.appointmentTime) return false;
       const bDate = new Date(new Date(b.appointmentDate).getTime() - new Date(b.appointmentDate).getTimezoneOffset() * 60000).toISOString().split('T')[0];
       return bDate === dateStr;
     });

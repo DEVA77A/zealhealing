@@ -63,11 +63,9 @@ const bookingSchema = mongoose.Schema(
     // Scheduling
     appointmentDate: {
       type: Date,
-      required: true,
     },
     appointmentTime: {
       type: String,
-      required: true,
     },
     appointmentEndTime: {
       type: String,
@@ -102,6 +100,14 @@ const bookingSchema = mongoose.Schema(
     razorpayOrderId: {
       type: String,
     },
+    razorpayPaymentId: String,
+    paymentAmountMinor: Number,
+    paymentAmountDecimals: Number,
+    paidAt: Date,
+    confirmationEmailSentAt: Date,
+    confirmationMobileSentAt: Date,
+    confirmationEmailRetryAt: Date,
+    confirmationMobileRetryAt: Date,
     invoiceNumber: {
       type: String,
     },

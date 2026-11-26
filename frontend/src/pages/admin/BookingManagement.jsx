@@ -1,18 +1,19 @@
 import { useState, useEffect } from 'react';
 import axios from 'axios';
 import { toast } from 'react-toastify';
+import { getCurrencyDecimals } from '../../utils/countryCurrency';
 import { useAuth } from '../../context/AuthContext';
 
 const BookingManagement = () => {
   const [bookings, setBookings] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [proofModal, setProofModal] = useState(null); 
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState('All');
   const [viewingInvoice, setViewingInvoice] = useState(null);
   const [adminModal, setAdminModal] = useState(null);
   // Draft of the guidance note shown to the client, edited in the modal.
   const [suggestionDraft, setSuggestionDraft] = useState('');
+  const [savingSchedule, setSavingSchedule] = useState(false);
   const [savingSuggestion, setSavingSuggestion] = useState(false);
   const { getToken } = useAuth();
 
@@ -47,11 +48,7 @@ const BookingManagement = () => {
       );
       setBookings(bookings.map(b => b._id === id ? data : b));
       
-      if (status === 'Accepted') {
-        toast.success('Booking accepted! Notification & Zoom meeting triggers initiated.');
-      } else {
-        toast.success(`Booking status changed to ${status}`);
-      }
+      toast.success(`Booking status changed to ${status}`);
     } catch (error) {
       toast.error('Failed to update status');
     }
@@ -79,8 +76,22 @@ const BookingManagement = () => {
       }
       return data;
     } catch (error) {
-      toast.error('Update failed');
+      toast.error(error.response?.data?.message || 'Update failed');
       return null;
+    }
+  };
+
+  const saveSchedule = async (event) => {
+    event.preventDefault();
+    const form = new FormData(event.currentTarget);
+    setSavingSchedule(true);
+    try {
+      await updateAdminDetails(adminModal._id, {
+        appointmentDate: form.get('appointmentDate'),
+        appointmentTime: form.get('appointmentTime'),
+      }, { keepOpen: true, message: 'Session scheduled' });
+    } finally {
+      setSavingSchedule(false);
     }
   };
 
@@ -97,11 +108,7 @@ const BookingManagement = () => {
     }
   };
 
-  const downloadInvoice = async (id, bookingStatus, mode = 'download') => {
-    if (!['Accepted', 'Completed'].includes(bookingStatus)) {
-      toast.info('Invoice is only available after accepting the booking.');
-      return;
-    }
+  const downloadInvoice = async (id, mode = 'download') => {
     try {
       const response = await axios.get(`/api/invoice/${id}`, {
         headers: { Authorization: `Bearer ${getToken()}` },
@@ -183,7 +190,7 @@ const BookingManagement = () => {
           <h2 style={{ fontFamily: 'var(--font-display)', fontSize: '2.5rem', fontWeight: 500, color: 'var(--clr-ink)', letterSpacing: '-0.02em', marginBottom: '4px' }}>
             Bookings Ledger
           </h2>
-          <p style={{ fontSize: '0.9375rem', color: 'var(--clr-warm-gray)' }}>Track incoming schedules, configure crystals, and confirm payments.</p>
+          <p style={{ fontSize: '0.9375rem', color: 'var(--clr-warm-gray)' }}>Track payments, assign session times, and manage client guidance.</p>
         </div>
         <div style={{
           background: 'var(--clr-forest-700)',
@@ -275,8 +282,8 @@ const BookingManagement = () => {
                 >
                   <td style={{ padding: '20px 24px' }}>
                     <div style={{ display: 'flex', flexDirection: 'column' }}>
-                       <span style={{ fontWeight: 700, color: 'var(--clr-ink)' }}>{new Date(booking.appointmentDate).toLocaleDateString('en-IN', { day: '2-digit', month: 'short' })}</span>
-                       <span style={{ fontSize: '0.75rem', color: 'var(--clr-warm-gray)', marginTop: '2px' }}>{formatTime12h(booking.appointmentTime)}</span>
+                       <span style={{ fontWeight: 700, color: 'var(--clr-ink)' }}>{booking.appointmentDate ? new Date(booking.appointmentDate).toLocaleDateString('en-IN', { day: '2-digit', month: 'short' }) : 'Awaiting schedule'}</span>
+                       <span style={{ fontSize: '0.75rem', color: 'var(--clr-warm-gray)', marginTop: '2px' }}>{booking.appointmentTime && formatTime12h(booking.appointmentTime)}</span>
                     </div>
                   </td>
                   <td style={{ padding: '20px 24px' }}>
@@ -304,23 +311,14 @@ const BookingManagement = () => {
                     <p style={{ margin: '2px 0 0', fontSize: '0.8125rem', color: 'var(--clr-ink-muted)' }}>{booking.duration} mins</p>
                   </td>
                   <td style={{ padding: '20px 24px' }}>
-                    <p style={{ margin: 0, fontWeight: 700 }}>{booking.currencySymbol || '₹'}{(booking.convertedAmount || booking.price).toLocaleString()}</p>
-                    <p style={{ margin: '2px 0 0', fontSize: '0.75rem', color: 'var(--clr-warm-gray)' }}>{booking.paymentMethod === 'Manual' ? 'Bank Wire' : 'Gateway'}</p>
+                    <p style={{ margin: 0, fontWeight: 700 }}>{booking.currencySymbol || '₹'}{(booking.paymentAmountMinor != null ? booking.paymentAmountMinor / 10 ** (booking.paymentAmountDecimals ?? getCurrencyDecimals(booking.currency)) : booking.convertedAmount || booking.price).toLocaleString()}</p>
+                    <p style={{ margin: '2px 0 0', fontSize: '0.75rem', color: 'var(--clr-warm-gray)' }}>{booking.paymentMethod} · {booking.paymentStatus}</p>
                   </td>
                   <td style={{ padding: '20px 24px' }}>
                     {getStatusBadge(booking.bookingStatus)}
                   </td>
                   <td style={{ padding: '20px 24px', textAlign: 'right' }}>
                     <div style={{ display: 'inline-flex', gap: '8px' }}>
-                      {['Queued'].includes(booking.bookingStatus) && (
-                        <button 
-                          onClick={() => updateStatus(booking._id, 'Accepted')} 
-                          style={{ background: 'var(--clr-forest-700)', color: '#fff', border: 'none', padding: '6px 12px', borderRadius: '4px', cursor: 'pointer', fontSize: '0.75rem', fontWeight: 700 }}
-                        >
-                          Accept
-                        </button>
-                      )}
-
                       {['Accepted'].includes(booking.bookingStatus) && (
                         <button 
                           onClick={() => updateStatus(booking._id, 'Completed')} 
@@ -330,16 +328,16 @@ const BookingManagement = () => {
                         </button>
                       )}
 
-                      {['Accepted', 'Completed'].includes(booking.bookingStatus) && (
+                      {(booking.paidAt || (booking.paymentStatus === 'Completed' && ['Accepted', 'Completed'].includes(booking.bookingStatus))) && (
                         <>
                           <button 
-                            onClick={() => downloadInvoice(booking._id, booking.bookingStatus, 'view')} 
+                            onClick={() => downloadInvoice(booking._id, 'view')}
                             style={{ background: '#fff', border: '1px solid var(--clr-border)', color: 'var(--clr-ink)', padding: '6px 10px', borderRadius: '4px', cursor: 'pointer', fontSize: '0.75rem' }}
                           >
                             👁 View
                           </button>
                           <button 
-                            onClick={() => downloadInvoice(booking._id, booking.bookingStatus, 'download')} 
+                            onClick={() => downloadInvoice(booking._id, 'download')}
                             style={{ background: 'var(--clr-forest-50)', border: '1px solid var(--clr-border)', color: 'var(--clr-forest-700)', padding: '6px 10px', borderRadius: '4px', cursor: 'pointer', fontSize: '0.75rem' }}
                           >
                             📥 PDF
@@ -461,19 +459,50 @@ const BookingManagement = () => {
                    <div>
                      <p style={{ fontSize: '0.5625rem', fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--clr-warm-gray)', margin: 0 }}>Proposed Schedule</p>
                      <p style={{ fontWeight: 600, color: 'var(--clr-ink)', margin: '2px 0 0', fontSize: '0.875rem' }}>
-                      {new Date(adminModal.appointmentDate).toLocaleDateString()} @ {formatTime12h(adminModal.appointmentTime)}
+                      {adminModal.appointmentDate ? `${new Date(adminModal.appointmentDate).toLocaleDateString()} @ ${formatTime12h(adminModal.appointmentTime)}` : 'Awaiting schedule'}
                      </p>
                    </div>
                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                     <label style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--clr-ink-muted)' }}>Confirmed</label>
+                     <label htmlFor="schedule-confirmed" style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--clr-ink-muted)' }}>Schedule confirmed</label>
                      <input 
                        type="checkbox" 
+                       id="schedule-confirmed"
                        defaultChecked={adminModal.isManuallyConfirmed}
                        onChange={(e) => updateAdminDetails(adminModal._id, { isManuallyConfirmed: e.target.checked })}
                        style={{ width: '16px', height: '16px', cursor: 'pointer' }}
                      />
                    </div>
                  </div>
+
+                 {adminModal.razorpayOrderId && (
+                   <div style={{ fontSize: '0.875rem', overflowWrap: 'anywhere' }}>
+                     <p>Razorpay order {adminModal.razorpayOrderId}</p>
+                     {adminModal.razorpayPaymentId && <p>Payment {adminModal.razorpayPaymentId}</p>}
+                     {adminModal.paidAt && (
+                       <>
+                         <p>Captured {new Date(adminModal.paidAt).toLocaleString()}</p>
+                         <p>Invoice {adminModal.invoiceNumber}</p>
+                         <p>Email {adminModal.confirmationEmailSentAt ? 'sent' : 'pending'} · WhatsApp {adminModal.confirmationMobileSentAt ? 'sent' : 'pending'}</p>
+                       </>
+                     )}
+                   </div>
+                 )}
+                 {!adminModal.appointmentDate && ['Queued', 'Accepted'].includes(adminModal.bookingStatus) &&
+                   (adminModal.paymentAmountMinor == null || adminModal.paidAt) && (
+                   <form onSubmit={saveSchedule} style={{ display: 'flex', gap: '12px', flexWrap: 'wrap', alignItems: 'end' }}>
+                     <label>
+                       Session date
+                       <input className="input-field" name="appointmentDate" type="date" required />
+                     </label>
+                     <label>
+                       Start time
+                       <input className="input-field" name="appointmentTime" type="time" required />
+                     </label>
+                     <button className="btn-primary" type="submit" disabled={savingSchedule}>
+                       {savingSchedule ? 'Scheduling…' : 'Schedule Session'}
+                     </button>
+                   </form>
+                 )}
 
                  {/* Textareas */}
                  <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>

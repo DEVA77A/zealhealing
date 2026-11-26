@@ -1,7 +1,7 @@
 # ZEAL HEALING - Tarot Appointment Booking Platform
 
 ## Overview
-A production-ready full-stack web application built for the ZEAL HEALING Tarot Appointment Booking Platform. It features a premium, responsive UI for booking tarot sessions, managing appointments, secure authentication, processing payments (Razorpay, Google Pay QR, Manual), and generating automated PDF invoices.
+A full-stack application for booking tarot sessions, managing appointments, and paying online with Razorpay. Captured payments generate PDF invoices automatically.
 
 ## Technology Stack
 *   **Frontend:** React.js, Vite, Tailwind CSS, Framer Motion, Axios, React Router, React Toastify, React Icons
@@ -42,6 +42,16 @@ RAZORPAY_KEY_SECRET=your_razorpay_key_secret_here
    # Start Frontend (from frontend directory)
    npm run dev
    ```
+
+## Online payments and confirmations
+
+Set `RAZORPAY_KEY_ID` and `RAZORPAY_KEY_SECRET` in the backend environment. Use Razorpay test keys locally. Enable automatic payment capture in Razorpay and subscribe to `payment.captured` at the public backend URL `/api/payment/webhook`. Set `RAZORPAY_WEBHOOK_SECRET` to the signing secret configured for that endpoint. Localhost can verify the checkout callback directly.
+
+For confirmation emails with the PDF attached, set `EMAIL_USER` and `EMAIL_PASS` for the mail provider, and set `EMAIL_SERVICE` if it differs from the default Gmail service.
+
+For mobile confirmations, set `WHATSAPP_API_TOKEN`, `WHATSAPP_PHONE_ID`, and `WHATSAPP_PAYMENT_TEMPLATE`. The approved utility template must use a document header and a static body such as “Your Zeal Healing payment is confirmed. We will confirm your appointment slot within 2–3 days. Your invoice is attached.” Set `WHATSAPP_PAYMENT_LANGUAGE` to the approved template language code if it differs from `en`. The invoice goes to the WhatsApp number entered during checkout.
+
+Booking Management shows the Razorpay order and payment IDs, capture time, invoice, and confirmation dispatch status. Captured payments waiting for a session time remain in the booking queue.
 
 ## Deployment Guide
 

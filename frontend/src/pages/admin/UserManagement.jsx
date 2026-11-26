@@ -299,7 +299,7 @@ const UserManagement = () => {
                         <div>
                           <p style={{ fontSize: '0.5625rem', fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--clr-warm-gray)', margin: 0 }}>Schedule Details</p>
                           <p style={{ fontWeight: 600, color: 'var(--clr-ink)', margin: '2px 0 0', fontSize: '0.875rem' }}>
-                            {new Date(booking.appointmentDate).toLocaleDateString()} @ {booking.appointmentTime}
+                            {booking.appointmentDate ? `${new Date(booking.appointmentDate).toLocaleDateString()} @ ${booking.appointmentTime}` : 'Awaiting schedule'}
                           </p>
                         </div>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
@@ -444,7 +444,7 @@ const UserManagement = () => {
                       >
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
                           <span style={{ fontSize: '0.875rem', fontWeight: 700, color: 'var(--clr-ink)' }}>
-                            {new Date(booking.appointmentDate).toLocaleDateString()} @ {booking.appointmentTime}
+                            {booking.appointmentDate ? `${new Date(booking.appointmentDate).toLocaleDateString()} @ ${booking.appointmentTime}` : 'Awaiting schedule'}
                           </span>
                           <span style={{ fontSize: '0.8125rem', color: 'var(--clr-warm-gray)' }}>
                             {booking.appointmentType} • {booking.callType} • {booking.duration} mins

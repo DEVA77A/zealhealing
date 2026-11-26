@@ -36,10 +36,10 @@ const AdminDashboard = () => {
     try {
       const userInfo = JSON.parse(localStorage.getItem('userInfo'));
       await axios.put(`/api/admin/bookings/${id}`, 
-        { bookingStatus: status, paymentStatus: status === 'Completed' ? 'Completed' : undefined },
+        { bookingStatus: status },
         { headers: { Authorization: `Bearer ${userInfo.token}` } }
       );
-      setBookings(bookings.map(b => b._id === id ? { ...b, bookingStatus: status, paymentStatus: status === 'Completed' ? 'Completed' : b.paymentStatus } : b));
+      setBookings(bookings.map(b => b._id === id ? { ...b, bookingStatus: status } : b));
       toast.success(`Booking ${status}`);
     } catch (error) {
       toast.error('Failed to update status');

@@ -1,157 +1,41 @@
 const Booking = require('../models/Booking');
 const Invoice = require('../models/Invoice');
 const { isSlotAvailable } = require('../services/slotService');
-const { sendClientBookingEmail, sendAdminBookingEmail } = require('../services/emailService');
-const { sendClientWhatsApp, sendAdminWhatsApp } = require('../services/whatsappService');
+const { sendClientBookingEmail } = require('../services/emailService');
+const { sendClientWhatsApp } = require('../services/whatsappService');
 const { createZoomMeeting } = require('../services/zoomService');
 const { GST_RATE } = require('../config/pricingConfig');
 
-// @desc    Create new booking
-// @route   POST /api/bookings/create
-// @access  Private
-const createBooking = async (req, res) => {
-  try {
-    const {
-      appointmentType,
-      callType,
-      duration,
-      price,
-      customerName,
-      customerEmail,
-      customerPhone,
-      customerWhatsApp,
-      district,
-      state,
-      country,
-      countryCategory,
-      countryCode,
-      currency,
-      currencySymbol,
-      timezone,
-      exchangeRate,
-      baseINRAmount,
-      convertedAmount,
-      appointmentDate,
-      appointmentTime,
-      notes,
-      paymentMethod,
-      // Payment proof fields
-      senderAccountNumber,
-      transactionId,
-      paymentScreenshot,
-      paymentRemarks,
-    } = req.body;
+const getEndTime = (time, duration) => {
+  const [hours, minutes] = time.split(':').map(Number);
+  const end = hours * 60 + minutes + Number(duration);
+  return [Math.floor(end / 60), end % 60].map(value => String(value).padStart(2, '0')).join(':');
+};
 
-    // Validate mandatory fields
-    if (!customerName || !customerEmail || !customerPhone || !customerWhatsApp || !district || !state || !country) {
-      return res.status(400).json({ message: 'All customer fields are required: Full Name, Email, Phone, WhatsApp, District, State, Country' });
-    }
+const attachZoomMeeting = async (booking) => {
+  if (booking.callType !== 'Video Call') return;
 
-    // Validate appointment date/time
-    if (!appointmentDate || !appointmentTime) {
-      return res.status(400).json({ message: 'Appointment date and time are required' });
-    }
+  const zoom = await createZoomMeeting(booking);
+  if (!zoom) return;
 
-    // Check slot availability
-    const slotAvailable = await isSlotAvailable(appointmentDate, appointmentTime, duration);
-    if (!slotAvailable) {
-      return res.status(409).json({ message: 'This time slot is no longer available. Please select a different slot.' });
-    }
+  booking.zoomMeetingId = zoom.meetingId;
+  booking.zoomMeetingLink = zoom.meetingLink;
+  booking.zoomMeetingPassword = zoom.meetingPassword;
+  await booking.save();
+};
 
-    // GST applies to every booking, domestic and international alike.
-    // All figures here are INR - the stored source of truth.
-    const baseAmount = baseINRAmount || price;
-    const isIndia = countryCategory === 'india';
-    const gstRate = GST_RATE;
-    const gstAmount = Math.round(baseAmount * gstRate / 100);
-    const totalAmount = baseAmount + gstAmount;
-
-    // Determine call platform
-    let callPlatform = 'Normal Phone Call';
-    if (callType === 'Video Call') {
-      callPlatform = 'Zoom Meeting';
-    } else if (!isIndia) {
-      callPlatform = 'WhatsApp Voice Call';
-    }
-
-    // Calculate end time
-    const [h, m] = appointmentTime.split(':').map(Number);
-    const endMinutes = h * 60 + m + duration;
-    const endH = Math.floor(endMinutes / 60);
-    const endM = endMinutes % 60;
-    const appointmentEndTime = `${String(endH).padStart(2, '0')}:${String(endM).padStart(2, '0')}`;
-
-    const booking = new Booking({
-      userId: req.user ? req.user._id : null,
-      appointmentType,
-      callType,
-      duration,
-      price: baseAmount,
-      customerName,
-      customerEmail,
-      customerPhone,
-      customerWhatsApp,
-      district,
-      state,
-      country,
-      countryCategory: countryCategory || 'india',
-      countryCode,
-      currency,
-      currencySymbol,
-      timezone,
-      exchangeRate,
-      baseINRAmount: baseAmount,
-      convertedAmount,
-      gstRate,
-      gstAmount,
-      totalAmount,
-      appointmentDate,
-      appointmentTime,
-      appointmentEndTime,
-      callPlatform,
-      notes,
-      paymentMethod,
-      paymentStatus: 'Pending',
-      bookingStatus: 'Queued',
-      senderAccountNumber,
-      transactionId,
-      paymentScreenshot,
-      paymentRemarks,
-    });
-
-    const createdBooking = await booking.save();
-
-    // Create Zoom meeting for video calls (async, don't block response)
-    if (callType === 'Video Call') {
-      createZoomMeeting(createdBooking).then(async (zoomData) => {
-        if (zoomData) {
-          createdBooking.zoomMeetingId = zoomData.meetingId;
-          createdBooking.zoomMeetingLink = zoomData.meetingLink;
-          createdBooking.zoomMeetingPassword = zoomData.meetingPassword;
-          await createdBooking.save();
-        }
-      }).catch(err => console.error('[Zoom] Async error:', err.message));
-    }
-
-    // Send notifications (async, don't block response)
-    Promise.all([
-      sendClientBookingEmail(createdBooking).then(sent => {
-        if (sent) Booking.updateOne({ _id: createdBooking._id }, { emailSentToClient: true }).exec();
-      }),
-      sendAdminBookingEmail(createdBooking).then(sent => {
-        if (sent) Booking.updateOne({ _id: createdBooking._id }, { emailSentToAdmin: true }).exec();
-      }),
-      sendClientWhatsApp(createdBooking).then(sent => {
-        if (sent) Booking.updateOne({ _id: createdBooking._id }, { whatsappSentToClient: true }).exec();
-      }),
-      sendAdminWhatsApp(createdBooking).then(sent => {
-        if (sent) Booking.updateOne({ _id: createdBooking._id }, { whatsappSentToAdmin: true }).exec();
-      }),
-    ]).catch(err => console.error('[Notifications] Error:', err.message));
-
-    res.status(201).json(createdBooking);
-  } catch (error) {
-    res.status(500).json({ message: error.message });
+const notifyScheduledBooking = async (booking) => {
+  await attachZoomMeeting(booking);
+  const [emailSent, whatsappSent] = await Promise.all([
+    sendClientBookingEmail(booking),
+    sendClientWhatsApp(booking),
+  ]);
+  const notificationUpdates = {
+    ...(emailSent && { emailSentToClient: true }),
+    ...(whatsappSent && { whatsappSentToClient: true }),
+  };
+  if (Object.keys(notificationUpdates).length) {
+    await Booking.updateOne({ _id: booking._id }, notificationUpdates);
   }
 };
 
@@ -162,7 +46,7 @@ const getBookingById = async (req, res) => {
   try {
     const booking = await Booking.findById(req.params.id);
 
-    if (booking) {
+    if (booking && (req.user.role === 'admin' || String(booking.userId) === req.user.id)) {
       res.json(booking);
     } else {
       res.status(404).json({ message: 'Booking not found' });
@@ -181,7 +65,7 @@ const getBookings = async (req, res) => {
     if (req.query.userId) {
       query.userId = req.query.userId;
     }
-    const bookings = await Booking.find(query).populate('userId', 'id name email').sort({ appointmentDate: -1 });
+    const bookings = await Booking.find(query).populate('userId', 'id name email').sort({ bookingDate: -1 });
     res.json(bookings);
   } catch (error) {
     res.status(500).json({ message: error.message });
@@ -194,12 +78,13 @@ const getBookings = async (req, res) => {
 const updateBookingStatus = async (req, res) => {
   try {
     const {
-      paymentStatus,
       bookingStatus,
       isManuallyConfirmed,
       crystals,
       medicine,
       adminSuggestion,
+      appointmentDate,
+      appointmentTime,
     } = req.body;
     const booking = await Booking.findById(req.params.id);
 
@@ -207,8 +92,41 @@ const updateBookingStatus = async (req, res) => {
       return res.status(404).json({ message: 'Booking not found' });
     }
 
-    if (paymentStatus) booking.paymentStatus = paymentStatus;
-    if (bookingStatus) booking.bookingStatus = bookingStatus;
+    const assigningSchedule = appointmentDate !== undefined || appointmentTime !== undefined;
+    if (assigningSchedule) {
+      if (booking.paymentAmountMinor != null && !booking.paidAt) {
+        return res.status(409).json({ message: 'Payment must be captured before scheduling.' });
+      }
+      if (booking.appointmentDate && booking.appointmentTime) {
+        return res.status(409).json({ message: 'This booking already has a schedule.' });
+      }
+      if (!['Queued', 'Accepted'].includes(booking.bookingStatus)) {
+        return res.status(409).json({ message: 'Only queued or accepted bookings can be scheduled.' });
+      }
+      const date = new Date(appointmentDate + 'T00:00:00');
+      if (typeof appointmentDate !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(appointmentDate) ||
+          !Number.isFinite(date.getTime()) || date.getDate() !== Number(appointmentDate.slice(-2)) ||
+          typeof appointmentTime !== 'string' || !/^([01]\d|2[0-3]):[0-5]\d$/.test(appointmentTime)) {
+        return res.status(400).json({ message: 'Enter a valid appointment date and time.' });
+      }
+      const [hours, minutes] = appointmentTime.split(':').map(Number);
+      const start = new Date(date);
+      start.setHours(hours, minutes);
+      if (start <= new Date() || !(await isSlotAvailable(date, appointmentTime, booking.duration))) {
+        return res.status(409).json({ message: 'Choose an available future appointment slot.' });
+      }
+      booking.appointmentDate = date;
+      booking.appointmentTime = appointmentTime;
+      booking.appointmentEndTime = getEndTime(appointmentTime, booking.duration);
+      if (booking.paidAt && booking.bookingStatus === 'Queued') booking.bookingStatus = 'Accepted';
+    }
+
+    if (bookingStatus) {
+      if (booking.paymentAmountMinor != null && !booking.paidAt) {
+        return res.status(409).json({ message: 'Payment must be captured before updating the booking status.' });
+      }
+      booking.bookingStatus = bookingStatus;
+    }
     if (isManuallyConfirmed !== undefined) booking.isManuallyConfirmed = isManuallyConfirmed;
     if (crystals !== undefined) booking.crystals = crystals;
     if (medicine !== undefined) booking.medicine = medicine;
@@ -223,13 +141,12 @@ const updateBookingStatus = async (req, res) => {
       }
     }
 
-    // When admin accepts the booking, mark payment as completed and generate the invoice
+    // Keep invoice handling for previously paid bookings.
     if (bookingStatus === 'Accepted') {
-      booking.paymentStatus = 'Completed';
 
       // Auto-generate invoice on acceptance if it doesn't already exist
       const existingInvoice = await Invoice.findOne({ bookingId: booking._id });
-      if (!existingInvoice) {
+      if (!existingInvoice && booking.paymentStatus === 'Completed') {
         const invoiceNumber = `ZH-FY25-26/R14_${Math.floor(Math.random() * 10000)}`;
         // Invoice is always raised in INR (the stored base), GST inclusive.
         const subtotal = booking.baseINRAmount || booking.price;
@@ -254,15 +171,13 @@ const updateBookingStatus = async (req, res) => {
       }
     }
 
-    // If rejected, mark payment as failed
-    if (bookingStatus === 'Rejected') {
-      booking.paymentStatus = 'Failed';
-    }
-
     // Validate only what this request changed. Legacy bookings predate some
     // required fields, and full-document validation would reject an otherwise
     // valid admin edit (e.g. adding a suggestion) on those older records.
     const updatedBooking = await booking.save({ validateModifiedOnly: true });
+    if (assigningSchedule) {
+      notifyScheduledBooking(updatedBooking).catch(err => console.error('[Scheduling] Notification error:', err.message));
+    }
     res.json(updatedBooking);
   } catch (error) {
     res.status(500).json({ message: error.message });
@@ -276,6 +191,9 @@ const deleteBooking = async (req, res) => {
   try {
     const booking = await Booking.findById(req.params.id);
 
+    if (booking?.paymentAmountMinor != null) {
+      return res.status(409).json({ message: 'Online payment records must be retained.' });
+    }
     if (booking) {
       await Booking.deleteOne({ _id: booking._id });
       res.json({ message: 'Booking removed' });
@@ -292,7 +210,7 @@ const deleteBooking = async (req, res) => {
 // @access  Private
 const getMyBookings = async (req, res) => {
   try {
-    const bookings = await Booking.find({ userId: req.user._id }).sort({ createdAt: -1 });
+    const bookings = await Booking.find({ userId: req.user._id, $or: [{ paymentAmountMinor: { $exists: false } }, { paidAt: { $exists: true } }] }).sort({ createdAt: -1 });
     res.json(bookings);
   } catch (error) {
     res.status(500).json({ message: error.message });
@@ -300,7 +218,6 @@ const getMyBookings = async (req, res) => {
 };
 
 module.exports = {
-  createBooking,
   getBookingById,
   getBookings,
   updateBookingStatus,

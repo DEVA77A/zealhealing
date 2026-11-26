@@ -54,7 +54,6 @@ const Checkout = () => {
   const countryCategory = isDomestic ? 'india' : 'abroad';
   const [selectedPkg, setSelectedPkg] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [appointmentInfo, setAppointmentInfo] = useState(null);
 
   const [formData, setFormData] = useState({
     customerName: '',
@@ -69,11 +68,8 @@ const Checkout = () => {
   });
 
   useEffect(() => {
-    const savedInfo = localStorage.getItem('tempAppointment');
-    if (!savedInfo) { navigate(`/book/${id}`); return; }
-    setAppointmentInfo(JSON.parse(savedInfo));
     setFormData(prev => ({ ...prev, country: country || '', countryCategory: countryCategory || 'india' }));
-  }, [country, countryCategory, id, navigate]);
+  }, [country, countryCategory]);
 
   useEffect(() => {
     const userInfo = JSON.parse(localStorage.getItem('userInfo'));
@@ -105,18 +101,18 @@ const Checkout = () => {
     e.preventDefault();
     const dynamicPrice = getPrice(selectedPkg.type, selectedPkg.duration, selectedPkg.price);
     const bookingData = {
+      attemptId: crypto.randomUUID(),
       package: { ...selectedPkg, dynamicPrice, baseINRAmount: selectedPkg.price },
       // Use the location-derived values directly rather than the mirrored form
       // state, so the submitted region can never lag behind detection.
       pricingContext: { country, countryCode, countryCategory, currency, symbol, exchangeRate, gstRate },
       customerDetails: { ...formData, country: country || formData.country, countryCategory },
-      appointment: appointmentInfo,
     };
     localStorage.setItem('pendingBooking', JSON.stringify(bookingData));
     navigate('/payment');
   };
 
-  if (loading || !selectedPkg || !appointmentInfo) {
+  if (loading || !selectedPkg) {
     return (
       <div style={{ minHeight: '100svh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '16px', background: 'var(--clr-parchment)' }}>
         <div className="spinner" style={{ width: 36, height: 36 }} />
@@ -124,16 +120,6 @@ const Checkout = () => {
       </div>
     );
   }
-
-  const formatDate = (dateStr) =>
-    new Date(dateStr).toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' });
-
-  const formatTime12h = (time24) => {
-    const [h, m] = time24.split(':').map(Number);
-    const ampm = h >= 12 ? 'PM' : 'AM';
-    const h12 = h === 0 ? 12 : h > 12 ? h - 12 : h;
-    return `${String(h12).padStart(2, '0')}:${String(m).padStart(2, '0')} ${ampm}`;
-  };
 
   const basePrice = getPrice(selectedPkg.type, selectedPkg.duration, selectedPkg.price);
   // GST applies to every booking, international included. The rate comes from
@@ -359,9 +345,8 @@ const Checkout = () => {
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
                   {[
                     {
-                      label: 'Date & Time',
-                      main: formatDate(appointmentInfo.date),
-                      sub: formatTime12h(appointmentInfo.time),
+                      label: 'Scheduling',
+                      main: 'To be arranged after booking',
                     },
                     {
                       label: 'Session details',

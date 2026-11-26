@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import axios from 'axios';
 import { motion } from 'framer-motion';
+import { getCurrencyDecimals } from '../utils/countryCurrency';
 import { toast } from 'react-toastify';
 
 const PaymentSuccess = () => {
@@ -32,19 +33,32 @@ const PaymentSuccess = () => {
     );
   }
 
-  const isQueued = booking.bookingStatus === 'Queued';
-  const isAccepted = ['Accepted', 'Completed'].includes(booking.bookingStatus);
+  const isPaid = Boolean(booking.paidAt);
+  const isQueued = !isPaid && booking.bookingStatus === 'Queued';
+  const isAccepted = isPaid || (booking.paymentStatus === 'Completed' && ['Accepted', 'Completed'].includes(booking.bookingStatus));
   const isRejected = booking.bookingStatus === 'Rejected';
 
-  const handleDownloadInvoice = () => {
-    if (!isAccepted) {
-      toast.info('Invoice will be available once your booking is confirmed by the admin.');
-      return;
+  const handleDownloadInvoice = async () => {
+    try {
+      const token = JSON.parse(localStorage.getItem('userInfo'))?.token;
+      const { data } = await axios.get(`/api/invoice/${id}`, {
+        headers: { Authorization: `Bearer ${token}` },
+        responseType: 'blob',
+      });
+      const url = URL.createObjectURL(data);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `invoice-${booking.invoiceNumber || id}.pdf`;
+      link.click();
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
+    } catch {
+      toast.error('Could not download your invoice. Please try again.');
     }
-    window.open(`/api/invoice/${id}`, '_blank');
   };
 
-  const displayPrice = booking.convertedAmount || booking.price;
+  const displayPrice = isPaid
+    ? booking.paymentAmountMinor / 10 ** (booking.paymentAmountDecimals ?? getCurrencyDecimals(booking.currency))
+    : booking.convertedAmount || booking.price;
 
   return (
     <div style={{ minHeight: '100svh', background: 'var(--clr-parchment)', paddingTop: 'var(--nav-h)', paddingBottom: '80px', display: 'flex', justifyContent: 'center', px: '24px' }}>
@@ -74,7 +88,7 @@ const PaymentSuccess = () => {
               Booking Under Review
             </h2>
             <p style={{ fontSize: '0.9375rem', color: 'var(--clr-warm-gray)', lineHeight: 1.6, maxWidth: '460px', margin: '0 auto' }}>
-              We have received your payment proof. Our administration team is validating your transfer to confirm the slot.
+              Your payment confirmation is pending.
             </p>
           </div>
         )}
@@ -99,10 +113,10 @@ const PaymentSuccess = () => {
               ✓
             </motion.div>
             <h2 style={{ fontFamily: 'var(--font-display)', fontSize: '2.5rem', fontWeight: 500, color: 'var(--clr-forest-750, #1b3d20)', letterSpacing: '-0.02em', marginBottom: '12px' }}>
-              Booking Confirmed
+              {isPaid ? 'Payment Confirmed' : 'Booking Confirmed'}
             </h2>
             <p style={{ fontSize: '0.9375rem', color: 'var(--clr-warm-gray)', lineHeight: 1.6, maxWidth: '460px', margin: '0 auto' }}>
-              Your space has been locked. Your virtual link or dial-in details will be emailed shortly prior to meeting.
+              {booking.appointmentDate ? 'Your appointment has been scheduled.' : 'We will confirm your appointment slot within 2–3 days. Your invoice is available below.'}
             </p>
           </div>
         )}
@@ -166,7 +180,7 @@ const PaymentSuccess = () => {
               border: '1px solid',
               borderColor: isQueued ? '#fde68a' : isAccepted ? 'var(--clr-border)' : '#fca5a5',
             }}>
-              {booking.bookingStatus}
+              {isPaid && booking.bookingStatus === 'Queued' ? 'Awaiting schedule' : booking.bookingStatus}
             </span>
           </div>
 
@@ -182,7 +196,7 @@ const PaymentSuccess = () => {
             <div>
               <p style={{ fontSize: '0.625rem', fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase', color: 'var(--clr-warm-gray)', marginBottom: '3px' }}>Scheduled For</p>
               <p style={{ fontSize: '0.875rem', fontWeight: 600, color: 'var(--clr-ink)' }}>
-                {new Date(booking.appointmentDate).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })} · {booking.duration} Min
+                {booking.appointmentDate ? new Date(booking.appointmentDate).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }) : 'Session time to be arranged'} · {booking.duration} Min
               </p>
             </div>
             <div>
@@ -191,10 +205,10 @@ const PaymentSuccess = () => {
                 {booking.currencySymbol || '₹'}{displayPrice.toLocaleString()}
               </p>
             </div>
-            {booking.transactionId && (
+            {(booking.razorpayPaymentId || booking.transactionId) && (
               <div style={{ gridColumn: '1 / -1' }}>
                 <p style={{ fontSize: '0.625rem', fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase', color: 'var(--clr-warm-gray)', marginBottom: '3px' }}>Transaction ID / Reference</p>
-                <p style={{ fontSize: '0.875rem', fontWeight: 600, color: 'var(--clr-ink)' }}>{booking.transactionId}</p>
+                <p style={{ fontSize: '0.875rem', fontWeight: 600, color: 'var(--clr-ink)' }}>{booking.razorpayPaymentId || booking.transactionId}</p>
               </div>
             )}
             <div>

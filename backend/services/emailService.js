@@ -35,7 +35,7 @@ const sendClientBookingEmail = async (booking) => {
     await transporter.sendMail({
       from: `"Zeal Healing" <${process.env.EMAIL_USER}>`,
       to: booking.customerEmail,
-      subject: `✨ Booking Confirmed — Zeal Healing | ${booking.callType} (${booking.duration} mins)`,
+      subject: `✨ ${booking.appointmentTime ? 'Session Scheduled' : 'Booking Received'} — Zeal Healing | ${booking.callType} (${booking.duration} mins)`,
       html: `
         <div style="font-family: 'Segoe UI', Arial, sans-serif; max-width: 600px; margin: 0 auto; background: #f4f7f4; border-radius: 16px; overflow: hidden;">
           <div style="background: #2E7D32; padding: 32px; text-align: center;">
@@ -43,7 +43,7 @@ const sendClientBookingEmail = async (booking) => {
             <p style="color: rgba(255,255,255,0.85); margin-top: 8px;">Your Healing Journey Begins</p>
           </div>
           <div style="padding: 32px;">
-            <h2 style="color: #253825; margin-top: 0;">Booking Confirmed! ✅</h2>
+            <h2 style="color: #253825; margin-top: 0;">${booking.appointmentTime ? 'Session Scheduled' : 'Booking Received'}</h2>
             <p style="color: #345234;">Dear <strong>${booking.customerName}</strong>,</p>
             <p style="color: #345234;">Thank you for booking a session with Zeal Healing. Here are your appointment details:</p>
             
@@ -52,9 +52,9 @@ const sendClientBookingEmail = async (booking) => {
                 <tr><td style="padding: 8px 0; color: #538253; font-weight: 600;">Service</td><td style="padding: 8px 0; color: #253825;">${booking.appointmentType}</td></tr>
                 <tr><td style="padding: 8px 0; color: #538253; font-weight: 600;">Type</td><td style="padding: 8px 0; color: #253825;">${booking.callType}</td></tr>
                 <tr><td style="padding: 8px 0; color: #538253; font-weight: 600;">Duration</td><td style="padding: 8px 0; color: #253825;">${booking.duration} Minutes</td></tr>
-                <tr><td style="padding: 8px 0; color: #538253; font-weight: 600;">Date</td><td style="padding: 8px 0; color: #253825;">${new Date(booking.appointmentDate).toLocaleDateString('en-IN', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</td></tr>
-                <tr><td style="padding: 8px 0; color: #538253; font-weight: 600;">Time</td><td style="padding: 8px 0; color: #253825;">${booking.appointmentTime}</td></tr>
-                <tr><td style="padding: 8px 0; color: #538253; font-weight: 600;">${callPlatformInfo.split('\n')[0]}</td><td></td></tr>
+                <tr><td style="padding: 8px 0; color: #538253; font-weight: 600;">Date</td><td style="padding: 8px 0; color: #253825;">${booking.appointmentDate ? new Date(booking.appointmentDate).toLocaleDateString('en-IN', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }) : 'To be arranged'}</td></tr>
+                <tr><td style="padding: 8px 0; color: #538253; font-weight: 600;">Time</td><td style="padding: 8px 0; color: #253825;">${booking.appointmentTime || 'To be arranged'}</td></tr>
+                <tr><td colspan="2" style="padding: 8px 0; color: #538253; white-space: pre-line;">${callPlatformInfo}</td></tr>
               </table>
             </div>
 
@@ -114,8 +114,8 @@ const sendAdminBookingEmail = async (booking) => {
             <table style="width: 100%; border-collapse: collapse; background: white; border-radius: 8px; padding: 16px;">
               <tr><td style="padding: 8px; color: #538253; font-weight: 600;">Type</td><td style="padding: 8px;">${booking.callType}</td></tr>
               <tr><td style="padding: 8px; color: #538253; font-weight: 600;">Duration</td><td style="padding: 8px;">${booking.duration} mins</td></tr>
-              <tr><td style="padding: 8px; color: #538253; font-weight: 600;">Date</td><td style="padding: 8px;">${new Date(booking.appointmentDate).toLocaleDateString('en-IN')}</td></tr>
-              <tr><td style="padding: 8px; color: #538253; font-weight: 600;">Time</td><td style="padding: 8px;">${booking.appointmentTime}</td></tr>
+              <tr><td style="padding: 8px; color: #538253; font-weight: 600;">Date</td><td style="padding: 8px;">${booking.appointmentDate ? new Date(booking.appointmentDate).toLocaleDateString('en-IN') : 'To be arranged'}</td></tr>
+              <tr><td style="padding: 8px; color: #538253; font-weight: 600;">Time</td><td style="padding: 8px;">${booking.appointmentTime || 'To be arranged'}</td></tr>
               <tr><td style="padding: 8px; color: #538253; font-weight: 600;">Amount</td><td style="padding: 8px;">₹${booking.totalAmount || booking.price}</td></tr>
               <tr><td style="padding: 8px; color: #538253; font-weight: 600;">Payment</td><td style="padding: 8px;">${booking.paymentMethod} — ${booking.paymentStatus}</td></tr>
             </table>

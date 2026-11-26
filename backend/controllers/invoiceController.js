@@ -1,3 +1,6 @@
+const { PassThrough } = require('stream');
+const { buffer } = require('stream/consumers');
+const { getCurrencyDecimals } = require('../services/currencyService');
 const PDFDocument = require('pdfkit');
 const Booking = require('../models/Booking');
 const Invoice = require('../models/Invoice');
@@ -11,7 +14,7 @@ const numberToWords = (num) => {
   const b = ['', '', 'Twenty','Thirty','Forty','Fifty', 'Sixty','Seventy','Eighty','Ninety'];
 
   if ((num = num.toString()).length > 9) return 'overflow';
-  n = ('000000000' + num).substr(-9).match(/^(\d{2})(\d{2})(\d{2})(\d{1})(\d{2})$/);
+  const n = ('000000000' + num).substr(-9).match(/^(\d{2})(\d{2})(\d{2})(\d{1})(\d{2})$/);
   if (!n) return; var str = '';
   str += (n[1] != 0) ? (a[Number(n[1])] || b[n[1][0]] + ' ' + a[n[1][1]]) + 'Crore ' : '';
   str += (n[2] != 0) ? (a[Number(n[2])] || b[n[2][0]] + ' ' + a[n[2][1]]) + 'Lakh ' : '';
@@ -32,8 +35,17 @@ const generateInvoice = async (req, res) => {
       return res.status(404).json({ message: 'Booking not found' });
     }
 
-    // Block invoice generation if booking hasn't been accepted by admin yet
-    if (!['Accepted', 'Completed'].includes(booking.bookingStatus)) {
+    if (req.user.role !== 'admin' && String(booking.userId?._id) !== req.user.id) {
+      return res.status(403).json({ message: 'This invoice belongs to another customer.' });
+    }
+    if (booking.paidAt) {
+      const invoice = await ensurePaidInvoice(booking);
+      const pdf = await invoiceBuffer(booking, invoice);
+      res.setHeader('Content-Type', 'application/pdf');
+      res.setHeader('Content-Disposition', `attachment; filename="invoice-${invoice.invoiceNumber}.pdf"`);
+      return res.send(pdf);
+    }
+    if (booking.paymentStatus !== 'Completed' || !['Accepted', 'Completed'].includes(booking.bookingStatus)) {
       return res.status(403).json({ message: 'Invoice not available. Your booking is still in queue and awaiting admin approval.' });
     }
 
@@ -54,20 +66,6 @@ const generateInvoice = async (req, res) => {
     const SGST = totalTax / 2;
     const CGST = totalTax / 2;
     const roundOff = 0;
-
-    // What the customer actually paid, when it was not INR. Shown for
-    // reconciliation only - it carries no tax meaning.
-    const paidCurrency = booking.currency && booking.currency !== 'INR' ? booking.currency : null;
-    const paidSymbol = booking.currencySymbol || paidCurrency || '';
-    const paidAmount =
-      paidCurrency && booking.exchangeRate
-        ? Math.round(grandTotal * booking.exchangeRate * 100) / 100
-        : null;
-
-    // DEBUG LOG
-    console.log(`[Invoice] Generating PDF for Booking ${booking._id}`);
-    console.log(`[Invoice] grandTotal: ${grandTotal}, totalTax: ${totalTax}, subtotal: ${subtotal}`);
-
 
     // Check if invoice already exists
     let invoice = await Invoice.findOne({ bookingId: booking._id });
@@ -102,168 +100,202 @@ const generateInvoice = async (req, res) => {
       }
     }
 
-    // Generate PDF
-    const doc = new PDFDocument({ margin: 40, size: 'A4' });
-
+    const pdf = await invoiceBuffer(booking, invoice);
     res.setHeader('Content-Type', 'application/pdf');
-    res.setHeader(
-      'Content-Disposition',
-      `attachment; filename=invoice-${invoice.invoiceNumber}.pdf`
-    );
-
-    doc.pipe(res);
-
-    const greenColor = '#107c41'; // Adjusted to match the specific green in screenshot
-    const darkText = '#000000';
-    const lightText = '#333333';
-
-    // --- Header ---
-    doc.font('Helvetica-Bold').fontSize(14).fillColor(darkText).text('Zeal Healing', 40, 40);
-    
-    doc.font('Helvetica').fontSize(9).fillColor(lightText);
-    doc.text('1A, Kalasigudai Street, Namakkal');
-    doc.text('Tamil Nadu - 637001');
-    doc.text('Phone no : 9005974758');
-    doc.text('Email : isigihyouse@gmail.com');
-    doc.text('GSTIN : 33BJJPB868G1Z7');
-    doc.text('State : 33-Tamil Nadu');
-    doc.text('Web : https://zealhealing.com/', { link: 'https://zealhealing.com/', underline: true, fill: greenColor });
-
-    // Try to add Logo if it exists in frontend public
-    const logoPath = path.join(__dirname, '../../frontend/public/logo.png');
-    if (fs.existsSync(logoPath)) {
-      doc.image(logoPath, 450, 30, { width: 60 });
-      doc.font('Helvetica-Bold').fontSize(10).fillColor(greenColor).text('ZEAL HEALING', 440, 95, { width: 80, align: 'center' });
-    } else {
-      doc.font('Helvetica-Bold').fontSize(16).fillColor(greenColor).text('ZEAL HEALING', 430, 50, { width: 120, align: 'right' });
-    }
-
-    // --- Tax Invoice Title & Line ---
-    doc.moveDown(2);
-    doc.moveTo(40, doc.y).lineTo(555, doc.y).lineWidth(1).strokeColor(greenColor).stroke();
-    
-    doc.font('Helvetica-Bold').fontSize(12).fillColor(greenColor).text('Tax Invoice', 40, doc.y + 5, { align: 'center' });
-    
-    // --- Bill To & Invoice Details ---
-    const detailY = doc.y + 15;
-    
-    // Left: Bill To
-    doc.font('Helvetica-Bold').fontSize(9).fillColor(darkText).text('Bill To', 40, detailY);
-    doc.font('Helvetica-Bold').fontSize(10).text(booking.customerName, 40, detailY + 12);
-    doc.font('Helvetica').fontSize(9).fillColor(lightText).text(`Contact No. : ${booking.customerPhone}`, 40, detailY + 26);
-
-    // Right: Invoice Details
-    doc.font('Helvetica-Bold').fontSize(9).fillColor(darkText).text('Invoice Details', 400, detailY, { width: 155, align: 'right' });
-    doc.font('Helvetica').fontSize(9).fillColor(lightText).text(`Invoice No. : ${invoice.invoiceNumber}`, 400, detailY + 12, { width: 155, align: 'right' });
-    doc.text(`Date : ${new Date(invoice.createdAt || Date.now()).toLocaleDateString('en-GB').replace(/\//g, '-')}`, 400, detailY + 26, { width: 155, align: 'right' });
-
-    // --- Table Header ---
-    const tableTop = detailY + 60;
-    doc.rect(40, tableTop, 515, 20).fillAndStroke(greenColor, greenColor);
-    
-    doc.font('Helvetica-Bold').fontSize(9).fillColor('white');
-    doc.text('Item name', 45, tableTop + 5);
-    doc.text('HSN/ SAC', 220, tableTop + 5, { width: 60, align: 'center' });
-    doc.text('Qty', 280, tableTop + 5, { width: 30, align: 'center' });
-    doc.text('Unit', 310, tableTop + 5, { width: 40, align: 'center' });
-    doc.text('Price/ Unit', 350, tableTop + 5, { width: 70, align: 'right' });
-    doc.text('GST', 420, tableTop + 5, { width: 40, align: 'right' });
-    doc.text('Amount', 480, tableTop + 5, { width: 70, align: 'right' });
-
-    // --- Table Row ---
-    const rowTop = tableTop + 25;
-    doc.font('Helvetica').fontSize(9).fillColor(darkText);
-    
-    const itemName = `${booking.appointmentType} ${booking.duration}min ${booking.callType.charAt(0).toUpperCase() + booking.callType.slice(1)}`;
-    doc.text('1', 40, rowTop, { width: 15, align: 'center' }); // Serial number
-    doc.text(itemName, 55, rowTop);
-    doc.text('9993', 220, rowTop, { width: 60, align: 'center' });
-    doc.text('1', 280, rowTop, { width: 30, align: 'center' });
-    doc.text('Nos', 310, rowTop, { width: 40, align: 'center' });
-    doc.text(subtotal.toFixed(2), 350, rowTop, { width: 70, align: 'right' });
-    doc.text(`${GST.toFixed(1)}%`, 420, rowTop, { width: 40, align: 'right' });
-    doc.text(grandTotal.toFixed(2), 480, rowTop, { width: 70, align: 'right' });
-
-    // --- Bottom Section ---
-    const summaryTop = rowTop + 50;
-
-    // Left: Amount in Words
-    doc.font('Helvetica').fontSize(9).fillColor(lightText);
-    doc.text('Invoice Amount In Words', 40, summaryTop);
-    doc.font('Helvetica-Bold').fillColor(darkText).text(numberToWords(Math.round(grandTotal)), 40, summaryTop + 12);
-
-    // Right: Summary Calculations
-    const sumX = 350;
-    const sumW = 205;
-    let currentY = summaryTop;
-
-    doc.font('Helvetica-Bold').fontSize(9).text('Sub Total (Excl. Tax)', sumX, currentY);
-    doc.font('Helvetica').text(subtotal.toFixed(2), sumX, currentY, { width: sumW, align: 'right' });
-    currentY += 14;
-
-    const halfRate = (GST / 2).toFixed(1);
-
-    doc.font('Helvetica-Bold').text(`SGST@${halfRate}%`, sumX, currentY);
-    doc.font('Helvetica').text(SGST.toFixed(2), sumX, currentY, { width: sumW, align: 'right' });
-    currentY += 14;
-
-    doc.font('Helvetica-Bold').text(`CGST@${halfRate}%`, sumX, currentY);
-    doc.font('Helvetica').text(CGST.toFixed(2), sumX, currentY, { width: sumW, align: 'right' });
-    currentY += 14;
-
-    doc.font('Helvetica-Bold').text('Round off', sumX, currentY);
-    doc.font('Helvetica').text(roundOff.toFixed(2), sumX, currentY, { width: sumW, align: 'right' });
-    currentY += 14;
-
-    // Grand Total Row
-    doc.rect(sumX, currentY, sumW, 20).fillAndStroke(greenColor, greenColor);
-    doc.font('Helvetica-Bold').fillColor('white').text('Grand Total', sumX + 5, currentY + 5);
-    doc.text(`Rs. ${grandTotal.toFixed(2)}`, sumX, currentY + 5, { width: sumW - 5, align: 'right' });
-    currentY += 25;
-
-    // Payment Info
-    doc.font('Helvetica').fillColor(darkText).text('Received', sumX, currentY);
-    doc.text(grandTotal.toFixed(2), sumX, currentY, { width: sumW, align: 'right' });
-    currentY += 14;
-
-    doc.text('Balance', sumX, currentY);
-    doc.text('0.00', sumX, currentY, { width: sumW, align: 'right' });
-    currentY += 18;
-
-    // Reconciliation note for international bookings. The invoice itself stays
-    // in INR for tax purposes; this simply restates the charged amount.
-    if (paidAmount !== null) {
-      doc.font('Helvetica-Oblique').fontSize(8).fillColor(lightText);
-      doc.text(
-        `Charged in ${paidCurrency}: ${paidSymbol}${paidAmount.toFixed(2)} ` +
-          `(1 INR = ${booking.exchangeRate} ${paidCurrency})`,
-        sumX,
-        currentY,
-        { width: sumW, align: 'right' }
-      );
-      doc.font('Helvetica').fontSize(9).fillColor(darkText);
-    }
-
-    // --- Footer / Signature ---
-    const footerY = doc.page.height - 150;
-    
-    // Draw signature image
-    const signaturePath = path.join(__dirname, '../../frontend/public/signature.jpg');
-    if (fs.existsSync(signaturePath)) {
-      // Adjusted coordinates to position the image nicely above "From Zeal Healing"
-      doc.image(signaturePath, 450, footerY - 30, { width: 60 });
-    } else {
-      doc.font('Helvetica-Oblique').fontSize(16).fillColor('#000080').text('Zeal Healing', 400, footerY, { width: 155, align: 'center' });
-    }
-    
-    doc.font('Helvetica').fontSize(9).fillColor(lightText).text('From Zeal Healing', 400, footerY + 25, { width: 155, align: 'center' });
-    doc.font('Helvetica-Bold').text('Authorised Signatory', 400, footerY + 37, { width: 155, align: 'center' });
-
-    doc.end();
-
+    res.setHeader('Content-Disposition', `attachment; filename="invoice-${invoice.invoiceNumber.replace(/[^\w-]/g, '-')}.pdf"`);
+    res.send(pdf);
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    if (!res.headersSent) res.status(500).json({ message: error.message });
+    else res.destroy(error);
   }
 };
 
-module.exports = { generateInvoice };
+const ensurePaidInvoice = (booking) => Invoice.findOneAndUpdate(
+  { _id: booking._id },
+  {
+    $setOnInsert: {
+      bookingId: booking._id,
+      invoiceNumber: 'ZH-' + booking.id.toUpperCase(),
+      subtotal: booking.baseINRAmount,
+      SGST: Math.ceil(booking.gstAmount * 50) / 100,
+      CGST: Math.floor(booking.gstAmount * 50) / 100,
+      GST: booking.gstRate,
+      roundOff: 0,
+      grandTotal: booking.totalAmount,
+    },
+  },
+  { upsert: true, returnDocument: 'after' }
+);
+
+const renderInvoice = (booking, invoice, output) => {
+  const { subtotal, GST, SGST, CGST, grandTotal, roundOff } = invoice;
+  const paidCurrency = booking.currency && booking.currency !== 'INR' ? booking.currency : null;
+  const paidSymbol = booking.currencySymbol || paidCurrency || '';
+  const paidAmount = paidCurrency && booking.paymentAmountMinor != null
+    ? booking.paymentAmountMinor / 10 ** (booking.paymentAmountDecimals ?? getCurrencyDecimals(paidCurrency))
+    : paidCurrency && booking.exchangeRate ? Math.round(grandTotal * booking.exchangeRate * 100) / 100 : null;
+  const doc = new PDFDocument({ margin: 40, size: 'A4' });
+  doc.on('error', error => output.destroy(error));
+  doc.pipe(output);
+
+  const greenColor = '#107c41'; // Adjusted to match the specific green in screenshot
+  const darkText = '#000000';
+  const lightText = '#333333';
+
+  // --- Header ---
+  doc.font('Helvetica-Bold').fontSize(14).fillColor(darkText).text('Zeal Healing', 40, 40);
+
+  doc.font('Helvetica').fontSize(9).fillColor(lightText);
+  doc.text('1A, Kalasigudai Street, Namakkal');
+  doc.text('Tamil Nadu - 637001');
+  doc.text('Phone no : 9005974758');
+  doc.text('Email : isigihyouse@gmail.com');
+  doc.text('GSTIN : 33BJJPB868G1Z7');
+  doc.text('State : 33-Tamil Nadu');
+  doc.text('Web : https://zealhealing.com/', { link: 'https://zealhealing.com/', underline: true, fill: greenColor });
+
+  // Try to add Logo if it exists in frontend public
+  const logoPath = path.join(__dirname, '../../frontend/public/logo.png');
+  if (fs.existsSync(logoPath)) {
+    doc.image(logoPath, 450, 30, { width: 60 });
+    doc.font('Helvetica-Bold').fontSize(10).fillColor(greenColor).text('ZEAL HEALING', 440, 95, { width: 80, align: 'center' });
+  } else {
+    doc.font('Helvetica-Bold').fontSize(16).fillColor(greenColor).text('ZEAL HEALING', 430, 50, { width: 120, align: 'right' });
+  }
+
+  // --- Tax Invoice Title & Line ---
+  doc.moveDown(2);
+  doc.moveTo(40, doc.y).lineTo(555, doc.y).lineWidth(1).strokeColor(greenColor).stroke();
+
+  doc.font('Helvetica-Bold').fontSize(12).fillColor(greenColor).text('Tax Invoice', 40, doc.y + 5, { align: 'center' });
+
+  // --- Bill To & Invoice Details ---
+  const detailY = doc.y + 15;
+
+  // Left: Bill To
+  doc.font('Helvetica-Bold').fontSize(9).fillColor(darkText).text('Bill To', 40, detailY);
+  doc.font('Helvetica-Bold').fontSize(10).text(booking.customerName, 40, detailY + 12);
+  doc.font('Helvetica').fontSize(9).fillColor(lightText).text(`Contact No. : ${booking.customerPhone}`, 40, detailY + 26);
+
+  // Right: Invoice Details
+  doc.font('Helvetica-Bold').fontSize(9).fillColor(darkText).text('Invoice Details', 400, detailY, { width: 155, align: 'right' });
+  doc.font('Helvetica').fontSize(9).fillColor(lightText).text(`Invoice No. : ${invoice.invoiceNumber}`, 400, detailY + 12, { width: 155, align: 'right' });
+  doc.text(`Date : ${new Date(invoice.createdAt || Date.now()).toLocaleDateString('en-GB').replace(/\//g, '-')}`, 400, detailY + 26, { width: 155, align: 'right' });
+
+  // --- Table Header ---
+  const tableTop = detailY + 60;
+  doc.rect(40, tableTop, 515, 20).fillAndStroke(greenColor, greenColor);
+
+  doc.font('Helvetica-Bold').fontSize(9).fillColor('white');
+  doc.text('Item name', 45, tableTop + 5);
+  doc.text('HSN/ SAC', 220, tableTop + 5, { width: 60, align: 'center' });
+  doc.text('Qty', 280, tableTop + 5, { width: 30, align: 'center' });
+  doc.text('Unit', 310, tableTop + 5, { width: 40, align: 'center' });
+  doc.text('Price/ Unit', 350, tableTop + 5, { width: 70, align: 'right' });
+  doc.text('GST', 420, tableTop + 5, { width: 40, align: 'right' });
+  doc.text('Amount', 480, tableTop + 5, { width: 70, align: 'right' });
+
+  // --- Table Row ---
+  const rowTop = tableTop + 25;
+  doc.font('Helvetica').fontSize(9).fillColor(darkText);
+
+  const itemName = `${booking.appointmentType} ${booking.duration}min ${booking.callType.charAt(0).toUpperCase() + booking.callType.slice(1)}`;
+  doc.text('1', 40, rowTop, { width: 15, align: 'center' }); // Serial number
+  doc.text(itemName, 55, rowTop);
+  doc.text('9993', 220, rowTop, { width: 60, align: 'center' });
+  doc.text('1', 280, rowTop, { width: 30, align: 'center' });
+  doc.text('Nos', 310, rowTop, { width: 40, align: 'center' });
+  doc.text(subtotal.toFixed(2), 350, rowTop, { width: 70, align: 'right' });
+  doc.text(`${GST.toFixed(1)}%`, 420, rowTop, { width: 40, align: 'right' });
+  doc.text(grandTotal.toFixed(2), 480, rowTop, { width: 70, align: 'right' });
+
+  // --- Bottom Section ---
+  const summaryTop = rowTop + 50;
+
+  // Left: Amount in Words
+  doc.font('Helvetica').fontSize(9).fillColor(lightText);
+  doc.text('Invoice Amount In Words', 40, summaryTop);
+  doc.font('Helvetica-Bold').fillColor(darkText).text(numberToWords(Math.round(grandTotal)), 40, summaryTop + 12);
+
+  // Right: Summary Calculations
+  const sumX = 350;
+  const sumW = 205;
+  let currentY = summaryTop;
+
+  doc.font('Helvetica-Bold').fontSize(9).text('Sub Total (Excl. Tax)', sumX, currentY);
+  doc.font('Helvetica').text(subtotal.toFixed(2), sumX, currentY, { width: sumW, align: 'right' });
+  currentY += 14;
+
+  const halfRate = (GST / 2).toFixed(1);
+
+  doc.font('Helvetica-Bold').text(`SGST@${halfRate}%`, sumX, currentY);
+  doc.font('Helvetica').text(SGST.toFixed(2), sumX, currentY, { width: sumW, align: 'right' });
+  currentY += 14;
+
+  doc.font('Helvetica-Bold').text(`CGST@${halfRate}%`, sumX, currentY);
+  doc.font('Helvetica').text(CGST.toFixed(2), sumX, currentY, { width: sumW, align: 'right' });
+  currentY += 14;
+
+  doc.font('Helvetica-Bold').text('Round off', sumX, currentY);
+  doc.font('Helvetica').text(roundOff.toFixed(2), sumX, currentY, { width: sumW, align: 'right' });
+  currentY += 14;
+
+  // Grand Total Row
+  doc.rect(sumX, currentY, sumW, 20).fillAndStroke(greenColor, greenColor);
+  doc.font('Helvetica-Bold').fillColor('white').text('Grand Total', sumX + 5, currentY + 5);
+  doc.text(`Rs. ${grandTotal.toFixed(2)}`, sumX, currentY + 5, { width: sumW - 5, align: 'right' });
+  currentY += 25;
+
+  // Payment Info
+  doc.font('Helvetica').fillColor(darkText).text('Received', sumX, currentY);
+  doc.text(grandTotal.toFixed(2), sumX, currentY, { width: sumW, align: 'right' });
+  currentY += 14;
+
+  doc.text('Balance', sumX, currentY);
+  doc.text('0.00', sumX, currentY, { width: sumW, align: 'right' });
+  currentY += 18;
+
+  // Reconciliation note for international bookings. The invoice itself stays
+  // in INR for tax purposes; this simply restates the charged amount.
+  if (paidAmount !== null) {
+    doc.font('Helvetica-Oblique').fontSize(8).fillColor(lightText);
+    doc.text(
+      `Charged in ${paidCurrency}: ${paidSymbol}${paidAmount.toFixed(getCurrencyDecimals(paidCurrency))} ` +
+        `(1 INR = ${booking.exchangeRate} ${paidCurrency})`,
+      sumX,
+      currentY,
+      { width: sumW, align: 'right' }
+    );
+    doc.font('Helvetica').fontSize(9).fillColor(darkText);
+  }
+
+  // --- Footer / Signature ---
+  const footerY = doc.page.height - 150;
+
+  // Draw signature image
+  const signaturePath = path.join(__dirname, '../../frontend/public/signature.jpg');
+  if (fs.existsSync(signaturePath)) {
+    // Adjusted coordinates to position the image nicely above "From Zeal Healing"
+    doc.image(signaturePath, 450, footerY - 30, { width: 60 });
+  } else {
+    doc.font('Helvetica-Oblique').fontSize(16).fillColor('#000080').text('Zeal Healing', 400, footerY, { width: 155, align: 'center' });
+  }
+
+  doc.font('Helvetica').fontSize(9).fillColor(lightText).text('From Zeal Healing', 400, footerY + 25, { width: 155, align: 'center' });
+  doc.font('Helvetica-Bold').text('Authorised Signatory', 400, footerY + 37, { width: 155, align: 'center' });
+
+  doc.end();
+};
+
+const invoiceBuffer = async (booking, invoice) => {
+  const output = new PassThrough();
+  const result = buffer(output);
+  try {
+    renderInvoice(booking, invoice, output);
+  } catch (error) {
+    output.destroy(error);
+  }
+  return result;
+};
+
+module.exports = { generateInvoice, ensurePaidInvoice, invoiceBuffer };

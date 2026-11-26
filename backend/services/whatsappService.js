@@ -37,34 +37,34 @@ const sendWhatsAppMessage = async (to, message) => {
  * Send booking confirmation to client via WhatsApp
  */
 const sendClientWhatsApp = async (booking) => {
-  const dateStr = new Date(booking.appointmentDate).toLocaleDateString('en-IN', {
+  const dateStr = booking.appointmentDate ? new Date(booking.appointmentDate).toLocaleDateString('en-IN', {
     weekday: 'long', year: 'numeric', month: 'long', day: 'numeric'
-  });
+  }) : 'To be arranged';
 
   let platformInfo = '';
-  if (booking.callType === 'Video Call' && booking.zoomMeetingLink) {
-    platformInfo = `\n📹 Zoom Link: ${booking.zoomMeetingLink}\n🔑 Password: ${booking.zoomMeetingPassword || 'N/A'}`;
+  if (booking.callType === 'Video Call') {
+    if (booking.zoomMeetingLink) platformInfo = `\n📹 Zoom Link: ${booking.zoomMeetingLink}\n🔑 Password: ${booking.zoomMeetingPassword || 'N/A'}`;
   } else if (booking.countryCategory === 'india') {
     platformInfo = '\n📞 You will receive a phone call at your registered number.';
   } else {
     platformInfo = '\n📱 You will receive a WhatsApp Voice Call.';
   }
 
-  const message = `🌿 *Zeal Healing — Booking Confirmed* ✅
+  const message = `🌿 *Zeal Healing — ${booking.appointmentTime ? 'Session Scheduled' : 'Booking Received'}*
 
 Hi *${booking.customerName}*,
 
-Your appointment has been confirmed!
+${booking.appointmentTime ? 'Your session has been scheduled.' : 'We received your booking. Your session time will be arranged separately.'}
 
 📋 *Appointment Details:*
 • Service: ${booking.appointmentType}
 • Type: ${booking.callType}
 • Duration: ${booking.duration} minutes
 • Date: ${dateStr}
-• Time: ${booking.appointmentTime}
+• Time: ${booking.appointmentTime || 'To be arranged'}
 ${platformInfo}
 
-💰 *Amount Paid:* ₹${booking.totalAmount || booking.price}
+💰 *Booking Total:* ₹${booking.totalAmount || booking.price}
 
 Thank you for choosing Zeal Healing! 🙏
 — Team Zeal Healing`;
@@ -89,8 +89,8 @@ const sendAdminWhatsApp = async (booking) => {
 📍 ${booking.district}, ${booking.state}, ${booking.country}
 
 📋 ${booking.callType} | ${booking.duration} mins
-📅 ${new Date(booking.appointmentDate).toLocaleDateString('en-IN')}
-🕐 ${booking.appointmentTime}
+📅 ${booking.appointmentDate ? new Date(booking.appointmentDate).toLocaleDateString('en-IN') : 'To be arranged'}
+🕐 ${booking.appointmentTime || 'To be arranged'}
 💰 ₹${booking.totalAmount || booking.price} (${booking.paymentStatus})
 🏷️ ${booking.countryCategory.toUpperCase()}`;
 

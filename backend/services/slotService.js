@@ -34,6 +34,7 @@ const getAvailableSlots = async (date, duration) => {
 
   const existingBookings = await Booking.find({
     appointmentDate: { $gte: startOfDay, $lte: endOfDay },
+    appointmentTime: { $type: 'string', $ne: '' },
     bookingStatus: { $nin: ['Cancelled', 'Rejected'] },
   });
 

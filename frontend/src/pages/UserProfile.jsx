@@ -240,7 +240,7 @@ const UserProfile = () => {
                       <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', fontSize: '0.8125rem', color: 'var(--clr-warm-gray)' }}>
                         <p>Format: <span style={{ color: 'var(--clr-ink)', fontWeight: 500, textTransform: 'capitalize' }}>{booking.callType} Call</span></p>
                         <p>Duration: <span style={{ color: 'var(--clr-ink)', fontWeight: 500 }}>{booking.duration} minutes</span></p>
-                        <p>Scheduled: <span style={{ color: 'var(--clr-ink)', fontWeight: 500 }}>{new Date(booking.appointmentDate).toLocaleDateString()}</span></p>
+                        <p>Scheduled: <span style={{ color: 'var(--clr-ink)', fontWeight: 500 }}>{booking.appointmentDate ? new Date(booking.appointmentDate).toLocaleDateString() : 'To be arranged'}</span></p>
                       </div>
 
                       {/* Guidance written by the practitioner for this booking */}

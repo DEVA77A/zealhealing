@@ -1,5 +1,5 @@
 const express = require('express');
-const { createBooking, getBookingById, getMyBookings } = require('../controllers/bookingController');
+const { getBookingById, getMyBookings } = require('../controllers/bookingController');
 const { protect } = require('../middleware/authMiddleware');
 const { getAvailableSlots } = require('../services/slotService');
 
@@ -19,7 +19,7 @@ router.get('/slots', async (req, res) => {
   }
 });
 
-router.route('/create').post(protect, createBooking);
+router.post('/create', protect, (req, res) => res.status(410).json({ message: 'Use online checkout to book a session.' }));
 router.route('/mybookings').get(protect, getMyBookings);
 router.route('/:id').get(protect, getBookingById);
 

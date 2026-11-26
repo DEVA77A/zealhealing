@@ -27,11 +27,7 @@ const MyBookings = () => {
     fetchMyBookings();
   }, [getToken]);
 
-  const downloadInvoice = async (id, bookingStatus, mode = 'download') => {
-    if (!['Accepted', 'Completed'].includes(bookingStatus)) {
-      toast.info('Invoice is only available after admin approval.');
-      return;
-    }
+  const downloadInvoice = async (id, mode = 'download') => {
     try {
       const response = await axios.get(`/api/invoice/${id}`, {
         headers: { Authorization: `Bearer ${getToken()}` },
@@ -207,12 +203,12 @@ const MyBookings = () => {
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', marginBottom: '32px' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '12px', fontSize: '0.875rem', color: 'var(--clr-ink-muted)' }}>
                       <span style={{ fontSize: '1.1rem' }}>📅</span>
-                      <span>{new Date(booking.appointmentDate).toLocaleDateString(undefined, { dateStyle: 'long' })}</span>
+                      <span>{booking.appointmentDate ? new Date(booking.appointmentDate).toLocaleDateString(undefined, { dateStyle: 'long' }) : 'Session time to be arranged'}</span>
                     </div>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '12px', fontSize: '0.875rem', color: 'var(--clr-ink-muted)' }}>
                       <span style={{ fontSize: '1.1rem' }}>⏱</span>
                       <span>
-                        {booking.appointmentTime} <span style={{ color: 'var(--clr-warm-gray)', fontWeight: 400 }}>({booking.duration} mins)</span>
+                        {booking.appointmentTime && `${booking.appointmentTime} · `}<span style={{ color: 'var(--clr-warm-gray)', fontWeight: 400 }}>{booking.duration} mins</span>
                       </span>
                     </div>
                   </div>
@@ -310,10 +306,10 @@ const MyBookings = () => {
 
                     {/* Actions */}
                     <div style={{ display: 'flex', gap: '10px' }}>
-                      {['Accepted', 'Completed'].includes(booking.bookingStatus) ? (
+                      {(booking.paidAt || (booking.paymentStatus === 'Completed' && ['Accepted', 'Completed'].includes(booking.bookingStatus))) ? (
                         <>
                           <button 
-                            onClick={() => downloadInvoice(booking._id, booking.bookingStatus, 'view')} 
+                            onClick={() => downloadInvoice(booking._id, 'view')}
                             style={{
                               flex: 1, height: 42,
                               background: '#fff',
@@ -332,7 +328,7 @@ const MyBookings = () => {
                             👁 View
                           </button>
                           <button 
-                            onClick={() => downloadInvoice(booking._id, booking.bookingStatus, 'download')} 
+                            onClick={() => downloadInvoice(booking._id, 'download')}
                             style={{
                               flex: 1, height: 42,
                               background: '#fff',

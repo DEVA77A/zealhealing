@@ -10,14 +10,14 @@ const getDashboardStats = async (req, res) => {
   try {
     const range = req.query.range || 'all';
     
-    let bookingFilter = {};
+    let bookingFilter = { $or: [{ paymentAmountMinor: { $exists: false } }, { paidAt: { $exists: true } }] };
     let userFilter = { role: 'user' };
     
     if (range !== 'all') {
       const days = parseInt(range);
       const d = new Date();
       d.setDate(d.getDate() - days);
-      bookingFilter = { bookingDate: { $gte: d } };
+      bookingFilter.bookingDate = { $gte: d };
       userFilter.createdAt = { $gte: d };
     }
 
@@ -43,7 +43,7 @@ const getDashboardStats = async (req, res) => {
     const todaysRevenue = dailyBookings.reduce((acc, curr) => acc + (curr.totalAmount || curr.convertedAmount || curr.price), 0);
 
     // Pending vs Completed (using range filter)
-    const pendingBookings = await Booking.countDocuments({ bookingStatus: 'Scheduled', ...bookingFilter });
+    const pendingBookings = await Booking.countDocuments({ bookingStatus: { $in: ['Queued', 'Scheduled', 'Accepted'] }, ...bookingFilter });
     const completedSessions = await Booking.countDocuments({ bookingStatus: 'Completed', ...bookingFilter });
 
     // Chart Data: Revenue over time (last 6 months)
