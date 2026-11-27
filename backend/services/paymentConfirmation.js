@@ -4,7 +4,7 @@ const Booking = require('../models/Booking');
 const Invoice = require('../models/Invoice');
 const { invoiceBuffer } = require('../controllers/invoiceController');
 
-const scheduleMessage = 'We will confirm your appointment slot within 2–3 days.';
+const confirmationMessage = 'Your payment was successful. You’ll receive your appointment slot within 2–3 days.';
 const retryDelay = 10 * 60 * 1000;
 
 const methods = [
@@ -21,8 +21,8 @@ const methods = [
       await mail.sendMail({
         from: { name: 'Zeal Healing', address: process.env.EMAIL_USER },
         to: booking.customerEmail,
-        subject: 'Zeal Healing payment confirmed',
-        text: `Hi ${booking.customerName},\n\nYour payment is confirmed. ${scheduleMessage}\n\nYour appointment invoice ${invoice.invoiceNumber} is attached.`,
+        subject: 'Your Zeal Healing payment was successful',
+        text: `Hi ${booking.customerName},\n\n${confirmationMessage}\n\nYour appointment invoice ${invoice.invoiceNumber} is attached.\n\nThank you,\nZeal Healing`,
         attachments: [{ filename: `${invoice.invoiceNumber}.pdf`, content: pdf }],
       });
     },

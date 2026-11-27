@@ -47,9 +47,13 @@ RAZORPAY_KEY_SECRET=your_razorpay_key_secret_here
 
 Set `RAZORPAY_KEY_ID` and `RAZORPAY_KEY_SECRET` in the backend environment. Use Razorpay test keys locally. Enable automatic payment capture in Razorpay and subscribe to `payment.captured` at the public backend URL `/api/payment/webhook`. Set `RAZORPAY_WEBHOOK_SECRET` to the signing secret configured for that endpoint. Localhost can verify the checkout callback directly.
 
-For confirmation emails with the PDF attached, set `EMAIL_USER` and `EMAIL_PASS` for the mail provider, and set `EMAIL_SERVICE` if it differs from the default Gmail service.
+For confirmation emails with the PDF attached, set `EMAIL_USER` to the sender’s address and `EMAIL_PASS` to the sender’s mail credential. For Gmail SMTP, use a Google App Password. Set `EMAIL_SERVICE` if using another provider.
 
-For mobile confirmations, set `WHATSAPP_API_TOKEN`, `WHATSAPP_PHONE_ID`, and `WHATSAPP_PAYMENT_TEMPLATE`. The approved utility template must use a document header and a static body such as “Your Zeal Healing payment is confirmed. We will confirm your appointment slot within 2–3 days. Your invoice is attached.” Set `WHATSAPP_PAYMENT_LANGUAGE` to the approved template language code if it differs from `en`. The invoice goes to the WhatsApp number entered during checkout.
+For mobile confirmations, register the sender’s number in WhatsApp Business and set `WHATSAPP_PHONE_ID` to the resulting Meta phone number ID. Set `WHATSAPP_API_TOKEN` to the account’s messaging token and `WHATSAPP_PAYMENT_TEMPLATE` to the approved utility template name. The template needs a document header and this static body:
+
+> Your payment was successful. You’ll receive your appointment slot within 2–3 days. Your invoice is attached. Thank you, Zeal Healing.
+
+Set `WHATSAPP_PAYMENT_LANGUAGE` to the approved template language code if it differs from `en`. The invoice goes to the WhatsApp number entered during checkout.
 
 Booking Management shows the Razorpay order and payment IDs, capture time, invoice, and confirmation dispatch status. Captured payments waiting for a session time remain in the booking queue.
 
