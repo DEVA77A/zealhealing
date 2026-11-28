@@ -27,6 +27,7 @@ const userSchema = mongoose.Schema(
     },
     resetPasswordToken: String,
     resetPasswordExpire: Date,
+    passwordChangedAt: Date,
     lastLoginCountry: String,
     lastLoginCountryCode: String,
     lastLoginCurrency: String,

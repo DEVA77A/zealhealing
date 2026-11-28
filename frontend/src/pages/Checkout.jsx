@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import axios from 'axios';
 import { FiMapPin } from 'react-icons/fi';
+import { useAuth } from '../context/AuthContext';
 import { usePricing } from '../context/PricingContext';
 import { roundToCurrency } from '../utils/countryCurrency';
 
@@ -46,6 +47,7 @@ const FormField = ({ label, name, type, placeholder, value, onChange, required, 
 const Checkout = () => {
   const { id } = useParams();
   const navigate = useNavigate();
+  const { user } = useAuth();
   const { country, countryCode, currency, symbol, getPrice, formatPrice, exchangeRate, gstRate, isDomestic } = usePricing();
 
   // Region follows the detected location: India is domestic, anywhere else is
@@ -72,14 +74,13 @@ const Checkout = () => {
   }, [country, countryCategory]);
 
   useEffect(() => {
-    const userInfo = JSON.parse(localStorage.getItem('userInfo'));
-    if (userInfo) {
+    if (user) {
       setFormData(prev => ({
         ...prev,
-        customerName: userInfo.name || '',
-        customerEmail: userInfo.email || '',
-        customerPhone: userInfo.phone || '',
-        customerWhatsApp: userInfo.phone || '',
+        customerName: user.name || '',
+        customerEmail: user.email || '',
+        customerPhone: user.phone || '',
+        customerWhatsApp: user.phone || '',
       }));
     }
 
@@ -93,7 +94,7 @@ const Checkout = () => {
       }
     };
     fetchClassDetails();
-  }, [id, navigate]);
+  }, [id, navigate, user]);
 
   const handleChange = (e) => setFormData({ ...formData, [e.target.name]: e.target.value });
 

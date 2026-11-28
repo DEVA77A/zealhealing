@@ -33,9 +33,8 @@ const AdminLayout = () => {
 
   const toggleSidebar = () => setSidebarOpen(prev => !prev);
   
-  const handleLogout = () => {
-    logout();
-    navigate('/login');
+  const handleLogout = async () => {
+    if (await logout()) navigate('/login', { replace: true });
   };
 
   const handleNavClick = () => {

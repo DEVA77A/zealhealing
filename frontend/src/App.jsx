@@ -1,9 +1,9 @@
-import { BrowserRouter as Router, Routes, Route, useLocation } from 'react-router-dom';
+import { BrowserRouter as Router, Navigate, Routes, Route, useLocation } from 'react-router-dom';
 import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import { PricingProvider } from './context/PricingContext';
 import { LocationPromptProvider } from './context/LocationPromptContext';
-import { AuthProvider } from './context/AuthContext';
+import { AuthProvider, useAuth } from './context/AuthContext';
 import ProtectedRoute from './components/ProtectedRoute';
 
 // Layouts
@@ -39,16 +39,26 @@ import BookingCalendar from './pages/admin/BookingCalendar';
 
 const AppContent = () => {
   const location = useLocation();
+  const { user, loading, restoredSession, sessionError, retrySession } = useAuth();
   const isAuthRoute = ['/login', '/register', '/forgot-password', '/reset-password'].includes(location.pathname);
   const isAdminRoute = location.pathname.startsWith('/admin');
+  const restoredHome = restoredSession && user ? (user.role === 'admin' ? '/admin' : '/') : null;
+
+  if (loading) return <main className="min-h-screen flex items-center justify-center" role="status">Checking your session…</main>;
+  if (sessionError) return (
+    <main className="min-h-screen flex flex-col gap-4 items-center justify-center px-6">
+      <p role="alert">We couldn’t check your session. Try connecting again.</p>
+      <button type="button" className="btn-primary px-5 py-3" onClick={retrySession}>Try again</button>
+    </main>
+  );
 
   return (
     <div className="flex flex-col min-h-screen font-sans">
       {!isAuthRoute && !isAdminRoute && <Navbar />}
       <main className="flex-grow">
         <Routes>
-          <Route path="/login" element={<Login />} />
-          <Route path="/register" element={<Register />} />
+          <Route path="/login" element={restoredHome ? <Navigate to={restoredHome} replace /> : <Login />} />
+          <Route path="/register" element={restoredHome ? <Navigate to={restoredHome} replace /> : <Register />} />
           <Route path="/forgot-password" element={<ForgotPassword />} />
           <Route path="/reset-password" element={<ResetPassword />} />
           

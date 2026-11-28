@@ -2,18 +2,19 @@ import { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import axios from 'axios';
 import { motion } from 'framer-motion';
+import { useAuth } from '../context/AuthContext';
 import { getCurrencyDecimals } from '../utils/countryCurrency';
 import { toast } from 'react-toastify';
 
 const PaymentSuccess = () => {
   const { id } = useParams();
+  const { getToken } = useAuth();
   const [booking, setBooking] = useState(null);
 
   useEffect(() => {
     const fetchBooking = async () => {
       try {
-        const userInfo = JSON.parse(localStorage.getItem('userInfo'));
-        const token = userInfo ? userInfo.token : '';
+        const token = getToken();
         const { data } = await axios.get(`/api/bookings/${id}`, {
           headers: { Authorization: `Bearer ${token}` },
         });
@@ -23,7 +24,7 @@ const PaymentSuccess = () => {
       }
     };
     fetchBooking();
-  }, [id]);
+  }, [id, getToken]);
 
   if (!booking) {
     return (
@@ -40,7 +41,7 @@ const PaymentSuccess = () => {
 
   const handleDownloadInvoice = async () => {
     try {
-      const token = JSON.parse(localStorage.getItem('userInfo'))?.token;
+      const token = getToken();
       const { data } = await axios.get(`/api/invoice/${id}`, {
         headers: { Authorization: `Bearer ${token}` },
         responseType: 'blob',

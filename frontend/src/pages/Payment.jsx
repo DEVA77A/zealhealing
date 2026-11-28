@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { toast } from 'react-toastify';
 import { FiLock } from 'react-icons/fi';
+import { useAuth } from '../context/AuthContext';
 import { formatMoney } from '../utils/countryCurrency';
 
 let checkoutScript;
@@ -25,12 +26,9 @@ const loadCheckout = () => {
   return checkoutScript;
 };
 
-const paymentConfig = () => ({
-  headers: { Authorization: `Bearer ${JSON.parse(localStorage.getItem('userInfo'))?.token || ''}` },
-});
-
 const Payment = () => {
   const navigate = useNavigate();
+  const { getToken } = useAuth();
   const [checkout] = useState(() => {
     try {
       const data = JSON.parse(localStorage.getItem('pendingBooking'));
@@ -57,7 +55,7 @@ const Payment = () => {
     const controller = new AbortController();
     axios.post('/api/payment/quote', {
       attemptId, sessionId: checkout.package._id, countryCode: checkout.pricingContext?.countryCode,
-    }, { ...paymentConfig(), signal: controller.signal }).then(({ data }) => {
+    }, { headers: { Authorization: 'Bearer ' + getToken() }, signal: controller.signal }).then(({ data }) => {
       if (data.paid) {
         localStorage.removeItem('pendingBooking');
         localStorage.removeItem('razorpayReceipt:' + attemptId);
@@ -69,7 +67,7 @@ const Payment = () => {
       if (!axios.isCancel(err)) setError(err.response?.data?.message || 'Could not load your GST bill.');
     });
     return () => controller.abort();
-  }, [attemptId, checkout, navigate, refresh]);
+  }, [attemptId, checkout, getToken, navigate, refresh]);
 
   const finish = (data) => {
     localStorage.removeItem('pendingBooking');
@@ -81,7 +79,7 @@ const Payment = () => {
     setPaying(true);
     setError('');
     try {
-      const { data } = await axios.post('/api/payment/verify', confirmation, paymentConfig());
+      const { data } = await axios.post('/api/payment/verify', confirmation, { headers: { Authorization: 'Bearer ' + getToken() } });
       finish(data);
     } catch (err) {
       setError(err.response?.data?.message || 'Payment confirmation is pending. Check the status again before trying another payment.');
@@ -101,7 +99,7 @@ const Payment = () => {
         customerDetails: checkout.customerDetails,
         amount: quote.amount,
         currency: quote.currency,
-      }, paymentConfig());
+      }, { headers: { Authorization: 'Bearer ' + getToken() } });
       if (order.paid) return finish(order);
       await loadCheckout();
       const instance = new window.Razorpay({

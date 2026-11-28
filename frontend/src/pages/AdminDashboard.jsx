@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
+import { useAuth } from '../context/AuthContext';
 import { toast } from 'react-toastify';
 import { FaTrash, FaDownload, FaCheck, FaTimes } from 'react-icons/fa';
 
@@ -8,19 +9,19 @@ const AdminDashboard = () => {
   const [bookings, setBookings] = useState([]);
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
+  const { user } = useAuth();
 
   useEffect(() => {
     const fetchBookings = async () => {
       try {
-        const userInfo = JSON.parse(localStorage.getItem('userInfo'));
-        if (!userInfo || userInfo.role !== 'admin') {
+        if (!user || user.role !== 'admin') {
           toast.error('Not authorized as an admin');
           navigate('/');
           return;
         }
 
         const { data } = await axios.get('/api/admin/bookings', {
-          headers: { Authorization: `Bearer ${userInfo.token}` }
+          headers: { Authorization: `Bearer ${user.token}` }
         });
         setBookings(data);
         setLoading(false);
@@ -30,14 +31,13 @@ const AdminDashboard = () => {
       }
     };
     fetchBookings();
-  }, [navigate]);
+  }, [navigate, user]);
 
   const updateStatus = async (id, status) => {
     try {
-      const userInfo = JSON.parse(localStorage.getItem('userInfo'));
       await axios.put(`/api/admin/bookings/${id}`, 
         { bookingStatus: status },
-        { headers: { Authorization: `Bearer ${userInfo.token}` } }
+        { headers: { Authorization: `Bearer ${user.token}` } }
       );
       setBookings(bookings.map(b => b._id === id ? { ...b, bookingStatus: status } : b));
       toast.success(`Booking ${status}`);
@@ -49,9 +49,8 @@ const AdminDashboard = () => {
   const deleteBooking = async (id) => {
     if (window.confirm('Are you sure you want to delete this booking?')) {
       try {
-        const userInfo = JSON.parse(localStorage.getItem('userInfo'));
         await axios.delete(`/api/admin/bookings/${id}`, {
-          headers: { Authorization: `Bearer ${userInfo.token}` }
+          headers: { Authorization: `Bearer ${user.token}` }
         });
         setBookings(bookings.filter(b => b._id !== id));
         toast.success('Booking deleted');
